@@ -1,0 +1,326 @@
+.workspace-leaf-content[data-type="flashcard-genius-view"] .view-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+.flashcard-genius-obsidian-host {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.flashcard-genius-obsidian-host > .flashcard-genius-root {
+  width: 100%;
+  height: 100%;
+}
+
+/* Fallback palette rules for Obsidian versions without reliable @scope support. */
+.flashcard-genius-root.theme-indigo {
+  --app-accent: #4F46E5;
+  --app-accent-strong: #4338CA;
+  --app-accent-soft: #EEF2FF;
+  --app-panel: #F5F3FF;
+  --app-sidebar: #EDE9FE;
+  --app-panel-border: #C7D2FE;
+  --flashcard-genius-main: #E4E0F4;
+  --flashcard-genius-chip: #DDD9F1;
+  --flashcard-genius-chip-text: #4338CA;
+  --flashcard-genius-chip-border: #BDB5E6;
+}
+
+.flashcard-genius-root.theme-sky {
+  --app-accent: #0284C7;
+  --app-accent-strong: #0369A1;
+  --app-accent-soft: #E0F2FE;
+  --app-panel: #F0F9FF;
+  --app-sidebar: #E0F2FE;
+  --app-panel-border: #BAE6FD;
+  --flashcard-genius-main: #D7EBF5;
+  --flashcard-genius-chip: #CBE3EE;
+  --flashcard-genius-chip-text: #075985;
+  --flashcard-genius-chip-border: #9AC9DE;
+}
+
+.flashcard-genius-root.theme-emerald {
+  --app-accent: #059669;
+  --app-accent-strong: #047857;
+  --app-accent-soft: #D1FAE5;
+  --app-panel: #ECFDF5;
+  --app-sidebar: #D1FAE5;
+  --app-panel-border: #A7F3D0;
+  --flashcard-genius-main: #D9EFE5;
+  --flashcard-genius-chip: #C5E4D5;
+  --flashcard-genius-chip-text: #065F46;
+  --flashcard-genius-chip-border: #8DCCAD;
+}
+
+.flashcard-genius-root.theme-amber {
+  --app-accent: #D97706;
+  --app-accent-strong: #B45309;
+  --app-accent-soft: #FEF3C7;
+  --app-panel: #FFFBEB;
+  --app-sidebar: #FEF3C7;
+  --app-panel-border: #FDE68A;
+  --flashcard-genius-main: #F6E9CE;
+  --flashcard-genius-chip: #F0DDAF;
+  --flashcard-genius-chip-text: #92400E;
+  --flashcard-genius-chip-border: #E5C97D;
+}
+
+.flashcard-genius-root.theme-rose {
+  --app-accent: #E11D48;
+  --app-accent-strong: #BE123C;
+  --app-accent-soft: #FFE4E6;
+  --app-panel: #FFF1F2;
+  --app-sidebar: #FFE4E6;
+  --app-panel-border: #FECDD3;
+  --flashcard-genius-main: #F5DDE2;
+  --flashcard-genius-chip: #F0C9D1;
+  --flashcard-genius-chip-text: #9F1239;
+  --flashcard-genius-chip-border: #E5A1B1;
+}
+
+.flashcard-genius-root.theme-indigo .app-topbar,
+.flashcard-genius-root.theme-sky .app-topbar,
+.flashcard-genius-root.theme-emerald .app-topbar,
+.flashcard-genius-root.theme-amber .app-topbar,
+.flashcard-genius-root.theme-rose .app-topbar,
+.flashcard-genius-root.theme-indigo aside,
+.flashcard-genius-root.theme-sky aside,
+.flashcard-genius-root.theme-emerald aside,
+.flashcard-genius-root.theme-amber aside,
+.flashcard-genius-root.theme-rose aside,
+.flashcard-genius-root.theme-indigo .panel-toolbar,
+.flashcard-genius-root.theme-sky .panel-toolbar,
+.flashcard-genius-root.theme-emerald .panel-toolbar,
+.flashcard-genius-root.theme-amber .panel-toolbar,
+.flashcard-genius-root.theme-rose .panel-toolbar {
+  background: var(--app-panel) !important;
+  border-color: var(--app-panel-border) !important;
+}
+
+.flashcard-genius-root.theme-indigo .sidebar,
+.flashcard-genius-root.theme-sky .sidebar,
+.flashcard-genius-root.theme-emerald .sidebar,
+.flashcard-genius-root.theme-amber .sidebar,
+.flashcard-genius-root.theme-rose .sidebar {
+  background: var(--app-sidebar) !important;
+}
+
+.flashcard-genius-root.theme-indigo .workspace-main,
+.flashcard-genius-root.theme-sky .workspace-main,
+.flashcard-genius-root.theme-emerald .workspace-main,
+.flashcard-genius-root.theme-amber .workspace-main,
+.flashcard-genius-root.theme-rose .workspace-main,
+.flashcard-genius-root.theme-indigo .study-mode,
+.flashcard-genius-root.theme-sky .study-mode,
+.flashcard-genius-root.theme-emerald .study-mode,
+.flashcard-genius-root.theme-amber .study-mode,
+.flashcard-genius-root.theme-rose .study-mode {
+  background: var(--flashcard-genius-main) !important;
+}
+
+.flashcard-genius-root .stats-mode {
+  background: var(--flashcard-genius-main, #F7F6F2) !important;
+}
+
+.flashcard-genius-root .stats-table-panel {
+  background: #FFFFFF !important;
+  color: #111110 !important;
+  border-color: #E2DED4 !important;
+}
+
+.flashcard-genius-root .markdown-content ul,
+.flashcard-genius-root .markdown-content ol {
+  margin-left: 0 !important;
+  margin-inline-start: 0 !important;
+  padding-left: 1.35em !important;
+  padding-inline-start: 1.35em !important;
+  list-style-position: outside !important;
+}
+
+.flashcard-genius-root .stats-table-panel,
+.flashcard-genius-root .stats-table-panel table,
+.flashcard-genius-root .stats-table-panel thead,
+.flashcard-genius-root .stats-table-panel tbody,
+.flashcard-genius-root .stats-table-panel tr,
+.flashcard-genius-root .stats-table-panel th,
+.flashcard-genius-root .stats-table-panel td {
+  background: #FFFFFF !important;
+}
+
+.flashcard-genius-root .stats-table-panel table,
+.flashcard-genius-root .stats-table-panel table * {
+  color: #111110 !important;
+}
+
+.flashcard-genius-root .stats-table-panel .markdown-image-zoom,
+.flashcard-genius-root .stats-table-panel .markdown-image-zoom * {
+  color: #FFFFFF !important;
+}
+
+.flashcard-genius-root.theme-dark .stats-mode {
+  background: #202023 !important;
+}
+
+.flashcard-genius-root.theme-indigo .deck-count,
+.flashcard-genius-root.theme-sky .deck-count,
+.flashcard-genius-root.theme-emerald .deck-count,
+.flashcard-genius-root.theme-amber .deck-count,
+.flashcard-genius-root.theme-rose .deck-count,
+.flashcard-genius-root.theme-indigo .topic-count,
+.flashcard-genius-root.theme-sky .topic-count,
+.flashcard-genius-root.theme-emerald .topic-count,
+.flashcard-genius-root.theme-amber .topic-count,
+.flashcard-genius-root.theme-rose .topic-count,
+.flashcard-genius-root.theme-indigo .mode-switcher,
+.flashcard-genius-root.theme-sky .mode-switcher,
+.flashcard-genius-root.theme-emerald .mode-switcher,
+.flashcard-genius-root.theme-amber .mode-switcher,
+.flashcard-genius-root.theme-rose .mode-switcher,
+.flashcard-genius-root.theme-indigo .workspace-topic-header,
+.flashcard-genius-root.theme-sky .workspace-topic-header,
+.flashcard-genius-root.theme-emerald .workspace-topic-header,
+.flashcard-genius-root.theme-amber .workspace-topic-header,
+.flashcard-genius-root.theme-rose .workspace-topic-header,
+.flashcard-genius-root.theme-indigo .study-topic-header,
+.flashcard-genius-root.theme-sky .study-topic-header,
+.flashcard-genius-root.theme-emerald .study-topic-header,
+.flashcard-genius-root.theme-amber .study-topic-header,
+.flashcard-genius-root.theme-rose .study-topic-header {
+  background: var(--flashcard-genius-chip) !important;
+  color: var(--flashcard-genius-chip-text) !important;
+  border-color: var(--flashcard-genius-chip-border) !important;
+}
+
+.flashcard-genius-root.theme-indigo .sidebar .deck-item.is-selected,
+.flashcard-genius-root.theme-sky .sidebar .deck-item.is-selected,
+.flashcard-genius-root.theme-emerald .sidebar .deck-item.is-selected,
+.flashcard-genius-root.theme-amber .sidebar .deck-item.is-selected,
+.flashcard-genius-root.theme-rose .sidebar .deck-item.is-selected {
+  background: var(--app-accent-soft) !important;
+}
+
+.flashcard-genius-root.theme-indigo .subtopic-item,
+.flashcard-genius-root.theme-sky .subtopic-item,
+.flashcard-genius-root.theme-emerald .subtopic-item,
+.flashcard-genius-root.theme-amber .subtopic-item,
+.flashcard-genius-root.theme-rose .subtopic-item {
+  color: var(--flashcard-genius-chip-text) !important;
+}
+
+.flashcard-genius-root.theme-indigo .panel-toolbar select,
+.flashcard-genius-root.theme-sky .panel-toolbar select,
+.flashcard-genius-root.theme-emerald .panel-toolbar select,
+.flashcard-genius-root.theme-amber .panel-toolbar select,
+.flashcard-genius-root.theme-rose .panel-toolbar select,
+.flashcard-genius-root.theme-indigo .layout-button,
+.flashcard-genius-root.theme-sky .layout-button,
+.flashcard-genius-root.theme-emerald .layout-button,
+.flashcard-genius-root.theme-amber .layout-button,
+.flashcard-genius-root.theme-rose .layout-button {
+  background: color-mix(in srgb, var(--app-panel) 72%, var(--app-panel-border)) !important;
+  border-color: var(--app-panel-border) !important;
+}
+
+/* Keep card images inside the available card height without cropping them. */
+.flashcard-genius-root .card-image-area {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  padding: 10px 0 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.flashcard-genius-root .card-image-area .card-image-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.flashcard-genius-root .card-image-area .card-image-content > p,
+.flashcard-genius-root .image-question-content > p {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.flashcard-genius-root .card-image-area .card-image-content .markdown-image,
+.flashcard-genius-root .image-question-content .markdown-image {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+.flashcard-genius-root .card-image-area .card-image-content .markdown-image > img,
+.flashcard-genius-root .image-question-content .markdown-image > img {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain;
+  border-radius: 9px;
+}
+
+@media (max-width: 1024px) {
+.flashcard-genius-root .workspace-card .card-action-control:not(.difficulty-stars):not(.source-card-control),
+.flashcard-genius-root .flip-card .card-action-control:not(.difficulty-stars) {
+    display: none !important;
+  }
+}
+
+/* Keep Obsidian theme rules from centering the Flashcard Genius sidebar. */
+.flashcard-genius-root .sidebar,
+.flashcard-genius-root .sidebar * {
+  text-align: left !important;
+}
+
+.flashcard-genius-root .sidebar button,
+.flashcard-genius-root .sidebar [role="button"] {
+  justify-content: flex-start !important;
+}
+
+.flashcard-genius-root .panel-toolbar > button,
+.flashcard-genius-root .panel-toolbar > div > button {
+  width: auto !important;
+  min-width: max-content;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.flashcard-genius-root.theme-neutral .flip-card-back .study-answer-divider {
+  background: #1E3A8A !important;
+}
+
+.flashcard-genius-root.flashcard-genius-view-message {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+  color: #6B6560;
+  font-size: 13px;
+  text-align: center;
+}
