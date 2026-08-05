@@ -1,7 +1,7 @@
 {
   "id": "flashcard-genius",
   "name": "Flashcard Genius",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "1.7.2",
   "description": "Open Markdown flashcard decks from your vault in a dedicated study view.",
   "author": "Tom Maus",

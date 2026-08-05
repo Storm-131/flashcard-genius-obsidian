@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { AppMode, ColorScheme } from "../types";
 
 interface Props {
@@ -240,15 +240,17 @@ export default function TopBar({
           [
             { id: "edit", label: "Library", icon: <IconBook /> },
             { id: "study", label: "Study", icon: <IconBrain /> },
-          ] as { id: AppMode; label: string; icon: React.ReactNode }[]
+          ] as { id: AppMode; label: string; icon: ReactNode }[]
         ).map(({ id, label, icon }) => (
           <button
             key={id}
-            className="mode-button"
+            className={`mode-button topbar-mode-button${mode === id ? ' is-active' : ''}`}
             onClick={() => {
               onModeChange(id);
               setCompactMenuOpen(false);
             }}
+            onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+            onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
             style={{
               display: !isCompact && ((id === "edit" && primaryOverflowLevel >= 3) || (id === "study" && primaryOverflowLevel >= 2)) ? "none" : "flex",
               alignItems: "center",
@@ -257,26 +259,11 @@ export default function TopBar({
               gap: "5px",
               padding: "4px 10px",
               borderRadius: "5px",
-              border: "1px solid #E2DED4",
               fontSize: "12px",
               fontWeight: 500,
               cursor: "pointer",
               transition: "all 0.15s",
-              background: mode === id ? "var(--app-accent-soft, #EEF2FF)" : "transparent",
-              color: mode === id ? "var(--app-accent-strong, #4338CA)" : "#6B6560",
               boxShadow: "none",
-            }}
-            onMouseEnter={(event) => {
-              const element = event.currentTarget as HTMLElement;
-              element.style.background = "var(--app-accent-soft, #EEF2FF)";
-              element.style.borderColor = "var(--app-accent, #4F46E5)";
-              element.style.color = "var(--app-accent-strong, #4338CA)";
-            }}
-            onMouseLeave={(event) => {
-              const element = event.currentTarget as HTMLElement;
-              element.style.background = mode === id ? "var(--app-accent-soft, #EEF2FF)" : "transparent";
-              element.style.borderColor = "#E2DED4";
-              element.style.color = mode === id ? "var(--app-accent-strong, #4338CA)" : "#6B6560";
             }}
           >
             {icon}
@@ -287,10 +274,13 @@ export default function TopBar({
 
       {showStatsControl && (
         <button
+          className={`topbar-neutral-button${mode === "stats" ? " is-active" : ""}`}
           onClick={() => {
             onStatsClick();
             setCompactMenuOpen(false);
           }}
+          onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+          onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
             style={{
             display: !isCompact && primaryOverflowLevel >= 1 ? "none" : "flex",
             alignItems: "center",
@@ -298,23 +288,11 @@ export default function TopBar({
             gap: "5px",
             padding: "4px 10px",
             borderRadius: "6px",
-            border: "1px solid #E2DED4",
             fontSize: "12px",
             fontWeight: 500,
             color: "#6B6560",
-            background: mode === "stats" ? "#EEF2FF" : "transparent",
             cursor: "pointer",
             transition: "all 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            const el = e.currentTarget as HTMLElement;
-            el.style.background = "#F0EDE6";
-            el.style.borderColor = "#C8C4B8";
-          }}
-          onMouseLeave={(e) => {
-            const el = e.currentTarget as HTMLElement;
-            el.style.background = mode === "stats" ? "#EEF2FF" : "transparent";
-            el.style.borderColor = "#E2DED4";
           }}
         >
           <IconBarChart />
@@ -345,6 +323,7 @@ export default function TopBar({
           <IconSearch />
         </span>
         <input
+          className="topbar-search-input"
           type="text"
           placeholder="Search cards…"
           value={searchQuery}
@@ -355,7 +334,6 @@ export default function TopBar({
             paddingLeft: "30px",
             paddingRight: "10px",
             borderRadius: "7px",
-            border: "1px solid #E2DED4",
             background: "#F7F6F2",
             fontSize: "12px",
             color: "#111110",
@@ -363,8 +341,6 @@ export default function TopBar({
             transition: "border-color 0.15s",
             fontFamily: "inherit",
           }}
-          onFocus={(e) => ((e.target as HTMLElement).style.borderColor = "#4F46E5")}
-          onBlur={(e) => ((e.target as HTMLElement).style.borderColor = "#E2DED4")}
         />
       </div>
 
@@ -399,7 +375,10 @@ export default function TopBar({
       <div style={{ display: secondaryMenuLevel >= 2 ? "none" : undefined, position: "relative", alignSelf: isCompact ? "flex-start" : undefined }}>
         <button
           type="button"
+          className={`topbar-neutral-button${paletteOpen ? " is-active" : ""}`}
           onClick={() => setPaletteOpen((open) => !open)}
+          onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+          onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
           aria-label="Change color scheme"
           title="Change color scheme"
           style={{
@@ -409,23 +388,11 @@ export default function TopBar({
             gap: "5px",
             padding: "4px 10px",
             borderRadius: "6px",
-            border: "1px solid #E2DED4",
             fontSize: "12px",
             fontWeight: 500,
             color: "#6B6560",
-            background: paletteOpen ? "#EEF2FF" : "transparent",
             cursor: "pointer",
             transition: "all 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            const el = e.currentTarget as HTMLElement;
-            el.style.background = "#F0EDE6";
-            el.style.borderColor = "#C8C4B8";
-          }}
-          onMouseLeave={(e) => {
-            const el = e.currentTarget as HTMLElement;
-            el.style.background = paletteOpen ? "#EEF2FF" : "transparent";
-            el.style.borderColor = "#E2DED4";
           }}
         >
           <IconPalette />
@@ -475,10 +442,13 @@ export default function TopBar({
 
       {showDarkModeControl && (
         <button
+          className="topbar-icon-button"
           onClick={() => {
             onToggleDarkMode();
             setCompactMenuOpen(false);
           }}
+          onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+          onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
           aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
           title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
           style={{
@@ -490,20 +460,8 @@ export default function TopBar({
             alignSelf: isCompact ? "flex-start" : undefined,
             borderRadius: "6px",
             border: "none",
-            background: "transparent",
-            color: "#9B9488",
             cursor: "pointer",
             transition: "all 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            const el = e.currentTarget as HTMLElement;
-            el.style.background = "#F0EDE6";
-            el.style.color = "#6B6560";
-          }}
-          onMouseLeave={(e) => {
-            const el = e.currentTarget as HTMLElement;
-            el.style.background = "transparent";
-            el.style.color = "#9B9488";
           }}
         >
           <IconTheme darkMode={darkMode} />
@@ -512,7 +470,7 @@ export default function TopBar({
     </div>
   );
 
-  const menuButtonStyle: React.CSSProperties = {
+  const menuButtonStyle: CSSProperties = {
     width: "100%",
     height: "30px",
     display: "flex",
@@ -617,7 +575,10 @@ export default function TopBar({
       {/* Sidebar toggle + logo */}
       {showSidebarToggle && (
         <button
+          className="topbar-neutral-button"
           onClick={onToggleSidebar}
+          onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+          onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
           style={{
             display: "flex",
             alignItems: "center",
@@ -625,8 +586,6 @@ export default function TopBar({
             borderRadius: "6px",
             gap: "5px",
             padding: "4px 10px",
-            border: "1px solid #E2DED4",
-            background: "transparent",
             color: "#6B6560",
             fontSize: "12px",
             fontWeight: 500,
@@ -635,16 +594,6 @@ export default function TopBar({
             transform: "scale(0.75)",
             transformOrigin: "left center",
             flexShrink: 0,
-          }}
-          onMouseEnter={(e) => {
-            const element = e.currentTarget as HTMLElement;
-            element.style.background = "#F0EDE6";
-            element.style.borderColor = "#C8C4B8";
-          }}
-          onMouseLeave={(e) => {
-            const element = e.currentTarget as HTMLElement;
-            element.style.background = "transparent";
-            element.style.borderColor = "#E2DED4";
           }}
           title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
         >

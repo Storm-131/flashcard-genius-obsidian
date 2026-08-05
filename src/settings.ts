@@ -1,4 +1,4 @@
-import { PluginSettingTab, Setting, TFolder, type App } from 'obsidian'
+import { PluginSettingTab, Setting, TFolder, requireApiVersion, type App } from 'obsidian'
 import type FlashcardGeniusPlugin from './main'
 
 export interface FlashcardGeniusSettings {
@@ -38,13 +38,16 @@ export class FlashcardGeniusSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Clear default flashcard folder')
       .setDesc('Open Flashcard Genius with an empty deck list.')
-      .addButton(button => button
-        .setButtonText('Clear')
-        .setWarning()
-        .setDisabled(!this.plugin.settings.defaultFlashcardFolder)
-        .onClick(async () => {
+      .addButton(button => {
+        button.setButtonText('Clear')
+        if (requireApiVersion('1.13.0')) button.setDestructive()
+        else button.buttonEl.addClass('mod-warning')
+        return button
+          .setDisabled(!this.plugin.settings.defaultFlashcardFolder)
+          .onClick(async () => {
           await this.plugin.updateSettings({ defaultFlashcardFolder: null })
           this.display()
-        }))
+          })
+      })
   }
 }

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type DragEvent } from 'react'
+import { Modal, Setting, type App } from 'obsidian'
 import DifficultyStars from './DifficultyStars'
 import { useImageAssets } from '../images/ImageAssetsContext'
 import { extractMarkdownImages, hasMarkdownImages, removeMarkdownImage, type MarkdownImageReference } from '../images/markdownImages'
@@ -11,6 +12,7 @@ interface Props {
   onDelete: (id: string) => void
   collapsed: boolean
   onToggleCollapse: () => void
+  app?: App
 }
 
 function IconImage() {
@@ -49,7 +51,7 @@ function IconChevron({ direction }: { direction: 'left' | 'right' }) {
 
 type MarkdownAction = 'bold' | 'italic' | 'underline' | 'bullet' | 'ordered' | 'link' | 'code'
 
-function MarkdownToolbar({ onFormat }: { onFormat: (action: MarkdownAction) => void }) {
+function MarkdownToolbar({ onFormat }: { onFormat: (action: MarkdownAction) => void | Promise<void> }) {
   const buttons: { action: MarkdownAction; label: string; title: string }[] = [
     { action: 'bold', label: 'B', title: 'Bold' },
     { action: 'italic', label: 'I', title: 'Italic' },
@@ -70,7 +72,7 @@ function MarkdownToolbar({ onFormat }: { onFormat: (action: MarkdownAction) => v
           title={button.title}
           aria-label={button.title}
           onMouseDown={event => event.preventDefault()}
-          onClick={() => onFormat(button.action)}
+          onClick={() => { void onFormat(button.action) }}
           style={{ minWidth: '25px', height: '24px', padding: '0 5px', borderRadius: '5px', border: '1px solid #E2DED4', background: '#FAFAF8', color: '#6B6560', cursor: 'pointer', fontSize: button.action === 'italic' ? '13px' : '11px', fontStyle: button.action === 'italic' ? 'italic' : 'normal', fontWeight: button.action === 'bold' ? 700 : 500, fontFamily: 'inherit' }}
         >
           {button.label}
@@ -78,6 +80,62 @@ function MarkdownToolbar({ onFormat }: { onFormat: (action: MarkdownAction) => v
       ))}
     </div>
   )
+}
+
+class LinkUrlModal extends Modal {
+  private inputValue: string
+  private settled = false
+
+  constructor(app: App, initialValue: string, private readonly resolveResult: (value: string | null) => void) {
+    super(app)
+    this.inputValue = initialValue
+  }
+
+  onOpen(): void {
+    this.setTitle('Link URL')
+
+    new Setting(this.contentEl)
+      .setName('URL')
+      .addText(text => {
+        text.setValue(this.inputValue)
+        text.onChange(value => { this.inputValue = value })
+        text.inputEl.addEventListener('keydown', event => {
+          if (event.key !== 'Enter') return
+          event.preventDefault()
+          this.confirm()
+        })
+        window.requestAnimationFrame(() => {
+          text.inputEl.focus()
+          text.inputEl.select()
+        })
+      })
+
+    new Setting(this.contentEl)
+      .addButton(button => button
+        .setButtonText('Cancel')
+        .onClick(() => this.close()))
+      .addButton(button => button
+        .setButtonText('OK')
+        .setCta()
+        .onClick(() => this.confirm()))
+  }
+
+  onClose(): void {
+    this.contentEl.empty()
+    if (!this.settled) this.resolveResult(null)
+  }
+
+  private confirm(): void {
+    if (this.settled) return
+    this.settled = true
+    const value = this.inputValue
+    this.close()
+    this.resolveResult(value)
+  }
+}
+
+function requestLinkUrl(app: App, initialValue = ''): Promise<string | null> {
+  return new Promise(resolve => new LinkUrlModal(app, initialValue, resolve).open())
 }
 
 function toggleInline(text: string, prefix: string, suffix = prefix): string {
@@ -93,7 +151,7 @@ function toggleList(text: string, ordered: boolean): string {
   return lines.map((line, index) => ordered ? `${index + 1}. ${line}` : `- ${line}`).join('\n')
 }
 
-export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggleCollapse }: Props) {
+export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggleCollapse, app }: Props) {
   const { storage } = useImageAssets()
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
@@ -144,7 +202,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
     onToggleCollapse()
   }
 
-  const applyMarkdown = (field: 'question' | 'answer', action: MarkdownAction) => {
+  const applyMarkdown = async (field: 'question' | 'answer', action: MarkdownAction): Promise<void> => {
     const textarea = field === 'question' ? questionRef.current : answerRef.current
     const value = field === 'question' ? question : answer
     if (!textarea) return
@@ -166,7 +224,8 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
       const existingLink = selected.match(/^\[([^\]]+)\]\([^)]+\)$/)
       if (existingLink) replacement = existingLink[1]
       else {
-        const url = window.prompt('Link URL:')
+        if (!app) return
+        const url = await requestLinkUrl(app)
         if (!url) return
         replacement = `[${selected}](${url})`
       }
@@ -184,7 +243,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
     }
     dirtyRef.current = true
 
-    requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
       textarea.focus()
       textarea.setSelectionRange(start, start + replacement.length)
     })
@@ -220,7 +279,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
     dirtyRef.current = true
     setUploadError(null)
 
-    requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
       textarea?.focus()
       const cursor = start + insertion.length
       textarea?.setSelectionRange(cursor, cursor)
@@ -353,10 +412,9 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
     )
   }
 
-  const inputStyle: React.CSSProperties = {
+  const inputStyle: CSSProperties = {
     width: '100%',
     borderRadius: '7px',
-    border: '1px solid #E2DED4',
     padding: '8px 10px',
     fontSize: '12.5px',
     color: '#111110',
@@ -368,7 +426,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
     transition: 'border-color 0.15s',
   }
 
-  const labelStyle: React.CSSProperties = {
+  const labelStyle: CSSProperties = {
     fontSize: '10.5px',
     fontWeight: 600,
     letterSpacing: '0.05em',
@@ -433,6 +491,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
           <MarkdownToolbar onFormat={action => applyMarkdown('question', action)} />
           <textarea
             ref={questionRef}
+            className="editor-markdown-input"
             rows={3}
             value={question}
             aria-label="Question"
@@ -443,8 +502,6 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
               dirtyRef.current = true
             }}
             style={inputStyle}
-            onFocus={e => ((e.target as HTMLElement).style.borderColor = '#4F46E5')}
-            onBlur={e => ((e.target as HTMLElement).style.borderColor = '#E2DED4')}
           />
         </div>
 
@@ -454,6 +511,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
           <MarkdownToolbar onFormat={action => applyMarkdown('answer', action)} />
           <textarea
             ref={answerRef}
+            className="editor-markdown-input"
             rows={5}
             value={answer}
             aria-label="Answer"
@@ -468,8 +526,6 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
               dirtyRef.current = true
             }}
             style={inputStyle}
-            onFocus={e => ((e.target as HTMLElement).style.borderColor = '#4F46E5')}
-            onBlur={e => ((e.target as HTMLElement).style.borderColor = '#E2DED4')}
           />
         </div>
 
@@ -486,12 +542,14 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
           />
           <button
             type="button"
+            className="editor-image-upload"
             onClick={() => fileInputRef.current?.click()}
             onDragOver={event => event.preventDefault()}
             onDrop={handleImageDrop}
+            onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+            onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
             style={{
               width: '100%',
-              border: '1.5px dashed #D8D4C8',
               borderRadius: '8px',
               padding: '16px',
               display: 'flex',
@@ -500,18 +558,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
               gap: '6px',
               cursor: 'pointer',
               transition: 'all 0.15s',
-              background: '#FAFAF8',
               fontFamily: 'inherit',
-            }}
-            onMouseEnter={e => {
-              const el = e.currentTarget as HTMLElement
-              el.style.borderColor = '#9B9488'
-              el.style.background = '#F0EDE6'
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLElement
-              el.style.borderColor = '#D8D4C8'
-              el.style.background = '#FAFAF8'
             }}
           >
             <span style={{ color: '#C8C4B8' }}>
@@ -618,32 +665,20 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
         </button>
         <button
           type="button"
+          className="editor-delete-card"
           onClick={() => onDelete(card.id)}
+          onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+          onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
           style={{
             width: '34px',
             height: '34px',
             borderRadius: '7px',
-            border: '1px solid #E2DED4',
-            background: 'transparent',
-            color: '#9B9488',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             transition: 'all 0.15s',
             flexShrink: 0,
-          }}
-          onMouseEnter={e => {
-            const el = e.currentTarget as HTMLElement
-            el.style.background = '#FEF2F2'
-            el.style.borderColor = '#FCA5A5'
-            el.style.color = '#DC2626'
-          }}
-          onMouseLeave={e => {
-            const el = e.currentTarget as HTMLElement
-            el.style.background = 'transparent'
-            el.style.borderColor = '#E2DED4'
-            el.style.color = '#9B9488'
           }}
           title="Delete card"
           aria-label="Delete card"

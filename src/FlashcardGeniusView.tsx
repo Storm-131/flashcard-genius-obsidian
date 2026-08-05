@@ -110,8 +110,8 @@ export class FlashcardGeniusView extends ItemView {
   private loading = false
   private initialized = false
   private sourceLeaf: WorkspaceLeaf | null = null
-  private modifyTimers = new Map<string, ReturnType<typeof setTimeout>>()
-  private ownWriteTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  private modifyTimers = new Map<string, number>()
+  private ownWriteTimers = new Map<string, number>()
   private ownWritePaths = new Set<string>()
 
   constructor(leaf: WorkspaceLeaf, private readonly obsidianApp: App) {
@@ -143,8 +143,8 @@ export class FlashcardGeniusView extends ItemView {
   }
 
   async onClose(): Promise<void> {
-    for (const timer of this.modifyTimers.values()) clearTimeout(timer)
-    for (const timer of this.ownWriteTimers.values()) clearTimeout(timer)
+    for (const timer of this.modifyTimers.values()) window.clearTimeout(timer)
+    for (const timer of this.ownWriteTimers.values()) window.clearTimeout(timer)
     this.modifyTimers.clear()
     this.ownWriteTimers.clear()
     this.ownWritePaths.clear()
@@ -185,11 +185,11 @@ export class FlashcardGeniusView extends ItemView {
   }
 
   async setState(state: Record<string, unknown>): Promise<void> {
-    const rawSelections = Array.isArray(state.selections)
+    const rawSelections: unknown[] = Array.isArray(state.selections)
       ? state.selections
       : state.selection ? [state.selection] : []
     const selections = rawSelections.filter((selection): selection is VaultSelection => (
-      Boolean(selection)
+      selection !== null
       && typeof selection === 'object'
       && 'path' in selection
       && typeof selection.path === 'string'
@@ -228,8 +228,8 @@ export class FlashcardGeniusView extends ItemView {
   private markOwnWrite(path: string): void {
     this.ownWritePaths.add(path)
     const previousTimer = this.ownWriteTimers.get(path)
-    if (previousTimer) clearTimeout(previousTimer)
-    const timer = setTimeout(() => {
+    if (previousTimer) window.clearTimeout(previousTimer)
+    const timer = window.setTimeout(() => {
       this.ownWritePaths.delete(path)
       this.ownWriteTimers.delete(path)
     }, 1000)
@@ -241,8 +241,8 @@ export class FlashcardGeniusView extends ItemView {
     if (this.ownWritePaths.has(file.path)) return
 
     const previousTimer = this.modifyTimers.get(file.path)
-    if (previousTimer) clearTimeout(previousTimer)
-    const timer = setTimeout(() => {
+    if (previousTimer) window.clearTimeout(previousTimer)
+    const timer = window.setTimeout(() => {
       this.modifyTimers.delete(file.path)
       void this.refreshDeck(file.path)
     }, 250)
@@ -437,7 +437,12 @@ export class FlashcardGeniusView extends ItemView {
           onPersistDifficulty={(card, difficulty) => this.persistDifficulty(card, difficulty)}
           onOpenCardSource={card => { void this.openCardSource(card) }}
           onClearDecksFromView={() => { void this.showEmpty() }}
-          markdownContext={{ app: this.obsidianApp, component: this, createComponent: () => new Component(), render: MarkdownRenderer.render }}
+          markdownContext={{
+            app: this.obsidianApp,
+            component: this,
+            createComponent: () => new Component(),
+            render: (app, markdown, element, sourcePath, component) => MarkdownRenderer.render(app, markdown, element, sourcePath, component),
+          }}
           cardSourcePaths={Object.fromEntries(Object.entries(this.data.cardSources).map(([cardId, source]) => [cardId, source.filePath]))}
         />
       </StrictMode>,

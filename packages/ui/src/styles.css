@@ -752,3 +752,202 @@
   }
 }
 }
+
+body.flashcard-genius-resizing-sidebar {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.flashcard-genius-root .editor-markdown-input {
+  border: 1px solid #E2DED4;
+}
+
+.flashcard-genius-root .editor-markdown-input:focus {
+  border-color: #4F46E5;
+}
+
+.flashcard-genius-root .editor-image-upload {
+  border: 1.5px dashed #D8D4C8;
+  background: #FAFAF8;
+}
+
+.flashcard-genius-root .editor-image-upload.is-hovered {
+  border-color: #9B9488;
+  background: #F0EDE6;
+}
+
+.flashcard-genius-root .editor-delete-card {
+  border: 1px solid #E2DED4;
+  background: transparent;
+  color: #9B9488;
+}
+
+.flashcard-genius-root .editor-delete-card.is-hovered {
+  border-color: #FCA5A5;
+  background: #FEF2F2;
+  color: #DC2626;
+}
+
+.flashcard-genius-root .sidebar-card-preview,
+.flashcard-genius-root .sidebar-trash-card {
+  background: transparent;
+}
+
+.flashcard-genius-root .sidebar-card-preview.is-hovered,
+.flashcard-genius-root .sidebar-trash-card.is-hovered,
+.flashcard-genius-root .deck-item:not(.is-selected).is-hovered {
+  background: #E3E0D7;
+}
+
+.flashcard-genius-root .deck-item {
+  background: transparent;
+}
+
+.flashcard-genius-root .deck-item.is-selected {
+  background: #D8D4C8;
+}
+
+.flashcard-genius-root .sidebar-delete-deck {
+  color: #9B9488;
+}
+
+.flashcard-genius-root .sidebar-delete-deck.is-hovered {
+  color: #DC2626;
+}
+
+.flashcard-genius-root .sidebar-search-input {
+  border: 1px solid #D8D4C8;
+}
+
+.flashcard-genius-root .sidebar-search-input:focus {
+  border-color: #4F46E5;
+}
+
+.flashcard-genius-root .sidebar-category-button {
+  color: #9B9488;
+}
+
+.flashcard-genius-root .sidebar-category-button.is-hovered {
+  color: #6B6560;
+}
+
+.flashcard-genius-root .sidebar-add-deck {
+  border: 1px dashed #C8C4B8;
+  background: transparent;
+  color: #9B9488;
+}
+
+.flashcard-genius-root .sidebar-add-deck.is-hovered {
+  border-color: #9B9488;
+  background: #E3E0D7;
+  color: #4A4640;
+}
+
+.flashcard-genius-root .topbar-mode-button {
+  border: 1px solid #E2DED4;
+  background: transparent;
+  color: #6B6560;
+}
+
+.flashcard-genius-root .topbar-mode-button.is-active,
+.flashcard-genius-root .topbar-mode-button.is-hovered {
+  border-color: var(--app-accent, #4F46E5);
+  background: var(--app-accent-soft, #EEF2FF);
+  color: var(--app-accent-strong, #4338CA);
+}
+
+.flashcard-genius-root .topbar-mode-button.is-active:not(.is-hovered) {
+  border-color: #E2DED4;
+}
+
+.flashcard-genius-root .topbar-neutral-button {
+  border: 1px solid #E2DED4;
+  background: transparent;
+}
+
+.flashcard-genius-root .topbar-neutral-button.is-active {
+  background: #EEF2FF;
+}
+
+.flashcard-genius-root .topbar-neutral-button.is-hovered {
+  border-color: #C8C4B8;
+  background: #F0EDE6;
+}
+
+.flashcard-genius-root .topbar-search-input {
+  border: 1px solid #E2DED4;
+}
+
+.flashcard-genius-root .topbar-search-input:focus {
+  border-color: #4F46E5;
+}
+
+.flashcard-genius-root .topbar-icon-button {
+  background: transparent;
+  color: #9B9488;
+}
+
+.flashcard-genius-root .topbar-icon-button.is-hovered {
+  background: #F0EDE6;
+  color: #6B6560;
+}
+
+.flashcard-genius-root .workspace-card:not(.is-selected) {
+  border: 1px solid #E2DED4;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.flashcard-genius-root .workspace-card:not(.is-selected).is-hovered {
+  border-color: #C8C4B8;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.09);
+}
+
+.flashcard-genius-root .workspace-card-delete {
+  border: 1px solid #E2DED4;
+  color: #9B9488;
+}
+
+.flashcard-genius-root .workspace-card-delete.is-hovered {
+  border-color: #FCA5A5;
+  color: #DC2626;
+}
+
+.flashcard-genius-root .workspace-add-card-button {
+  background: #4F46E5;
+}
+
+.flashcard-genius-root .workspace-add-card-button.is-hovered {
+  background: #4338CA;
+}
+
+.flashcard-genius-root .workspace-add-card-tile {
+  border: 1.5px dashed #D8D4C8;
+  background: transparent;
+  color: #9B9488;
+}
+
+.flashcard-genius-root .workspace-add-card-tile.is-hovered {
+  border-color: #9B9488;
+  background: #FFFFFF;
+  color: #6B6560;
+}
+
+.flashcard-genius-root .study-reset-button {
+  background: transparent;
+}
+
+.flashcard-genius-root .study-reset-button.is-hovered {
+  background: #F0EDE6;
+}
+
+.flashcard-genius-root .study-exit-button {
+  border: 1px solid #E2DED4;
+  background: transparent;
+  color: #6B6560;
+}
+
+.flashcard-genius-root .study-exit-button.is-hovered {
+  border-color: #FCA5A5;
+  background: #FEF2F2;
+  color: #DC2626;
+}

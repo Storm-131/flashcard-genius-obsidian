@@ -24,7 +24,7 @@ export default function MarkdownImage({ path, alt }: Props) {
 
   const closeOverlay = () => {
     setOverlayOpen(false)
-    requestAnimationFrame(() => imageRef.current?.focus())
+    window.requestAnimationFrame(() => imageRef.current?.focus())
   }
 
   if (missing || !src) {

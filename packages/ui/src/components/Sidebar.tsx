@@ -211,16 +211,14 @@ export default function Sidebar({
     const stopResizing = () => {
       if (!resizingRef.current) return
       resizingRef.current = false
-      document.body.style.removeProperty('cursor')
-      document.body.style.removeProperty('user-select')
+      document.body.classList.remove('flashcard-genius-resizing-sidebar')
     }
     window.addEventListener('pointermove', handlePointerMove)
     window.addEventListener('pointerup', stopResizing)
     return () => {
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', stopResizing)
-      document.body.style.removeProperty('cursor')
-      document.body.style.removeProperty('user-select')
+      document.body.classList.remove('flashcard-genius-resizing-sidebar')
     }
   }, [maxSidebarWidth])
 
@@ -296,6 +294,7 @@ export default function Sidebar({
           {previewPosition && <span style={{ position: 'absolute', left: '2px', right: '2px', [previewPosition === 'before' ? 'top' : 'bottom']: '-1px', height: '2px', background: 'var(--app-accent, #4F46E5)', borderRadius: '2px', pointerEvents: 'none', zIndex: 2 }} />}
           <button
             type="button"
+            className="sidebar-card-preview"
             draggable={!immutable}
             onDragStart={event => {
               setDraggedCardId(card.id)
@@ -323,9 +322,9 @@ export default function Sidebar({
             }}
             onClick={() => onSelectCard(card.id)}
             title={card.question}
-            style={{ width: '100%', border: 'none', background: 'transparent', color: '#6B6560', cursor: 'grab', padding: '4px 5px 4px 18px', textAlign: 'left', fontFamily: 'inherit', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = '#E3E0D7')}
-            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
+            onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+            onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
+            style={{ width: '100%', border: 'none', color: '#6B6560', cursor: 'grab', padding: '4px 5px 4px 18px', textAlign: 'left', fontFamily: 'inherit', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
           >
             {plainTextPreview(card.question)}
           </button>
@@ -392,7 +391,7 @@ export default function Sidebar({
     return (
       <div key={deck.id} style={{ marginBottom: '2px' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <button title={deck.name} className={`deck-item${isSelected ? ' is-selected' : ''}`} onClick={() => onSelectDeck(deck.id)} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 6px 6px 22px', borderRadius: '6px 0 0 6px', border: 'none', cursor: 'pointer', background: isSelected ? '#D8D4C8' : 'transparent', color: isSelected ? '#111110' : '#4A4640', fontSize: '12.5px', fontWeight: isSelected ? 500 : 400, textAlign: 'left', transition: 'all 0.13s', fontFamily: 'inherit' }} onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = '#E3E0D7' }} onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent' }}>
+          <button title={deck.name} className={`deck-item${isSelected ? ' is-selected' : ''}`} onClick={() => onSelectDeck(deck.id)} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 6px 6px 22px', borderRadius: '6px 0 0 6px', border: 'none', cursor: 'pointer', color: isSelected ? '#111110' : '#4A4640', fontSize: '12.5px', fontWeight: isSelected ? 500 : 400, textAlign: 'left', transition: 'all 0.13s', fontFamily: 'inherit' }} onMouseEnter={event => event.currentTarget.classList.add('is-hovered')} onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}>
             <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: deck.color, flexShrink: 0 }} />
             <span title={deck.name} aria-label={deck.name} style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deck.name}</span>
             <span className="deck-count" style={{ fontSize: '10.5px', fontWeight: 500, color: isSelected ? '#6B6560' : '#9B9488', background: isSelected ? 'rgba(0,0,0,0.06)' : '#E3E0D7', borderRadius: '10px', padding: '1px 6px', flexShrink: 0 }}>{count}</span>
@@ -400,7 +399,7 @@ export default function Sidebar({
           <button type="button" onClick={() => toggleDeckQuestions(deck.id)} aria-label={questionsExpanded ? `Collapse questions in ${deck.name}` : `Show questions in ${deck.name}`} title={questionsExpanded ? 'Collapse questions' : 'Show questions'} style={{ width: '26px', height: '28px', border: 'none', borderRadius: '0 6px 6px 0', background: isSelected ? '#D8D4C8' : 'transparent', color: '#6B6560', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
             <IconChevron down={questionsExpanded} />
           </button>
-          {!immutable && <button type="button" onClick={() => onDeleteDeck(deck.id)} aria-label={`Delete ${deck.name}`} title={`Delete ${deck.name}`} style={{ width: '24px', height: '28px', border: 'none', borderRadius: '5px', background: 'transparent', color: '#9B9488', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontSize: '13px' }} onMouseEnter={event => ((event.currentTarget as HTMLElement).style.color = '#DC2626')} onMouseLeave={event => ((event.currentTarget as HTMLElement).style.color = '#9B9488')}>
+          {!immutable && <button className="sidebar-delete-deck" type="button" onClick={() => onDeleteDeck(deck.id)} aria-label={`Delete ${deck.name}`} title={`Delete ${deck.name}`} style={{ width: '24px', height: '28px', border: 'none', borderRadius: '5px', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontSize: '13px' }} onMouseEnter={event => event.currentTarget.classList.add('is-hovered')} onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}>
             <IconTrash />
           </button>}
         </div>
@@ -467,6 +466,7 @@ export default function Sidebar({
             <IconSearch />
           </span>
           <input
+            className="sidebar-search-input"
             type="text"
             placeholder="Search decks…"
             value={sidebarSearch}
@@ -477,7 +477,6 @@ export default function Sidebar({
               paddingLeft: '28px',
               paddingRight: '8px',
               borderRadius: '6px',
-              border: '1px solid #D8D4C8',
               background: '#F7F6F2',
               fontSize: '12px',
               color: '#111110',
@@ -485,8 +484,6 @@ export default function Sidebar({
               fontFamily: 'inherit',
               transition: 'border-color 0.15s',
             }}
-            onFocus={e => ((e.target as HTMLElement).style.borderColor = '#4F46E5')}
-            onBlur={e => ((e.target as HTMLElement).style.borderColor = '#D8D4C8')}
           />
         </div>
       </div>
@@ -498,6 +495,8 @@ export default function Sidebar({
         <button
           className={`deck-item${selectedDeckId === null ? ' is-selected' : ''}`}
           onClick={() => onSelectDeck(null)}
+          onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+          onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
           style={{
             width: '100%',
             display: 'flex',
@@ -507,19 +506,12 @@ export default function Sidebar({
             borderRadius: '6px',
             border: 'none',
             cursor: 'pointer',
-            background: selectedDeckId === null ? '#D8D4C8' : 'transparent',
             color: selectedDeckId === null ? '#111110' : '#4A4640',
             fontSize: '12.5px',
             fontWeight: selectedDeckId === null ? 500 : 400,
             textAlign: 'left',
             transition: 'all 0.13s',
             fontFamily: 'inherit',
-          }}
-          onMouseEnter={e => {
-            if (selectedDeckId !== null) (e.currentTarget as HTMLElement).style.background = '#E3E0D7'
-          }}
-          onMouseLeave={e => {
-            if (selectedDeckId !== null) (e.currentTarget as HTMLElement).style.background = 'transparent'
           }}
         >
           <IconCards />
@@ -589,12 +581,13 @@ export default function Sidebar({
             {trash.map(card => (
               <button
                 key={card.id}
+                className="sidebar-trash-card"
                 type="button"
                 onClick={() => onRestoreCard(card.id)}
                 title="Restore to its original position"
-                style={{ width: '100%', border: 'none', background: 'transparent', color: '#6B6560', cursor: 'pointer', padding: '4px 5px', textAlign: 'left', fontFamily: 'inherit', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                onMouseEnter={event => ((event.currentTarget as HTMLElement).style.background = '#E3E0D7')}
-                onMouseLeave={event => ((event.currentTarget as HTMLElement).style.background = 'transparent')}
+                onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+                onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
+                style={{ width: '100%', border: 'none', color: '#6B6560', cursor: 'pointer', padding: '4px 5px', textAlign: 'left', fontFamily: 'inherit', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
               >
                 ↩ {card.question}
               </button>
@@ -629,7 +622,10 @@ export default function Sidebar({
           return (
             <div key={cat.id} style={{ marginBottom: '4px' }}>
               <button
+                className="sidebar-category-button"
                 onClick={() => toggleCat(cat.id)}
+                onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+                onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
                 style={{
                   width: '100%',
                   display: 'flex',
@@ -639,7 +635,6 @@ export default function Sidebar({
                   borderRadius: '5px',
                   border: 'none',
                   background: 'transparent',
-                  color: '#9B9488',
                   fontSize: '10.5px',
                   fontWeight: 600,
                   letterSpacing: '0.06em',
@@ -649,8 +644,6 @@ export default function Sidebar({
                   transition: 'color 0.13s',
                   fontFamily: 'inherit',
                 }}
-                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#6B6560')}
-                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = '#9B9488')}
               >
                 <IconChevron down={!isCollapsed} />
                 {cat.name}
@@ -703,7 +696,10 @@ export default function Sidebar({
       {/* Add deck button */}
       {!immutable && <div style={{ padding: '10px', borderTop: '1px solid #D8D4C8' }}>
         <button
+          className="sidebar-add-deck"
           onClick={onAddDeck}
+          onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+          onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
           style={{
             width: '100%',
             display: 'flex',
@@ -712,26 +708,11 @@ export default function Sidebar({
             gap: '6px',
             padding: '7px',
             borderRadius: '6px',
-            border: '1px dashed #C8C4B8',
-            background: 'transparent',
-            color: '#9B9488',
             fontSize: '12px',
             fontWeight: 500,
             cursor: 'pointer',
             transition: 'all 0.15s',
             fontFamily: 'inherit',
-          }}
-          onMouseEnter={e => {
-            const el = e.currentTarget as HTMLElement
-            el.style.background = '#E3E0D7'
-            el.style.borderColor = '#9B9488'
-            el.style.color = '#4A4640'
-          }}
-          onMouseLeave={e => {
-            const el = e.currentTarget as HTMLElement
-            el.style.background = 'transparent'
-            el.style.borderColor = '#C8C4B8'
-            el.style.color = '#9B9488'
           }}
         >
           <IconPlus />
@@ -747,8 +728,7 @@ export default function Sidebar({
           manuallyResizedRef.current = true
           resizingRef.current = true
           resizeStartRef.current = { x: event.clientX, width: sidebarWidth }
-          document.body.style.cursor = 'col-resize'
-          document.body.style.userSelect = 'none'
+          document.body.classList.add('flashcard-genius-resizing-sidebar')
         }}
         style={{ position: 'absolute', top: 0, right: '-4px', bottom: 0, width: '8px', cursor: 'col-resize', zIndex: 5, touchAction: 'none' }}
       />

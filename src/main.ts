@@ -29,7 +29,7 @@ export default class FlashcardGeniusPlugin extends Plugin {
 
     this.addCommand({
       id: 'open-current-note',
-      name: 'Open current note in Flashcard Genius',
+      name: 'Open current note',
       checkCallback: checking => {
         const file = this.app.workspace.getActiveFile()
         if (!file || file.extension.toLocaleLowerCase() !== 'md') return false
@@ -43,9 +43,7 @@ export default class FlashcardGeniusPlugin extends Plugin {
     })
   }
 
-  async onunload(): Promise<void> {
-    this.app.workspace.detachLeavesOfType(FLASHCARD_GENIUS_VIEW_TYPE)
-  }
+  onunload(): void {}
 
   async updateSettings(settings: Partial<FlashcardGeniusSettings>): Promise<void> {
     this.settings = { ...this.settings, ...settings }

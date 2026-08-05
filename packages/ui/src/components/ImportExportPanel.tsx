@@ -20,18 +20,19 @@ interface FileSystemEntryLike {
 function addRelativePath(file: File, relativePath: string): FolderImportFile {
   try {
     Object.defineProperty(file, 'relativePath', { configurable: true, value: relativePath })
-    return file as FolderImportFile
+    return file
   } catch {
     const copy = new File([file], file.name, { type: file.type, lastModified: file.lastModified })
     Object.defineProperty(copy, 'relativePath', { configurable: true, value: relativePath })
-    return copy as FolderImportFile
+    return copy
   }
 }
 
 async function filesFromEntry(entry: FileSystemEntryLike, parentPath = ''): Promise<FolderImportFile[]> {
   const relativePath = parentPath ? `${parentPath}/${entry.name}` : entry.name
-  if (entry.isFile && entry.file) {
-    return new Promise((resolve, reject) => entry.file!(file => resolve([addRelativePath(file, relativePath)]), reject))
+  const getFile = entry.file
+  if (entry.isFile && getFile) {
+    return new Promise((resolve, reject) => getFile(file => resolve([addRelativePath(file, relativePath)]), reject))
   }
   if (!entry.isDirectory || !entry.createReader) return []
   const reader = entry.createReader()
@@ -140,7 +141,7 @@ export default function ImportExportPanel(props: ImportExportPanelProps) {
         }}
         onDragOver={event => { event.preventDefault(); if (!props.busy) setDropActive(true) }}
         onDragLeave={() => setDropActive(false)}
-        onDrop={handleDrop}
+        onDrop={event => { void handleDrop(event) }}
         aria-label="Choose a folder or drop files and folders"
         style={{ marginTop: '7px', padding: '8px', borderRadius: '5px', border: `1px dashed ${dropActive ? 'var(--app-accent, #4F46E5)' : '#B8B4A8'}`, background: dropActive ? 'var(--app-accent-soft, #EEF2FF)' : '#F0EDE6', color: '#6B6560', fontSize: '10px', lineHeight: 1.35, textAlign: 'center', cursor: props.busy ? 'not-allowed' : 'pointer', transition: 'all 0.15s' }}
       >

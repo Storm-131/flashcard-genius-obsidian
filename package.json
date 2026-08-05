@@ -1,7 +1,7 @@
 {
   "name": "flashcard-genius-obsidian",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Standalone source repository for the Flashcard Genius Obsidian community plugin.",
   "type": "module",
   "workspaces": [

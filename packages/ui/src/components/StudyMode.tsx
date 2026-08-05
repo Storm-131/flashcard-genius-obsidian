@@ -869,7 +869,10 @@ export default function StudyMode({
 
           {toolbarOverflowLevel < 2 && (
             <button
+              className="study-reset-button"
               onClick={handleReset}
+              onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+              onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -878,7 +881,6 @@ export default function StudyMode({
                 height: "32px",
                 borderRadius: "6px",
                 border: "1px solid #E2DED4",
-                background: "transparent",
                 color: "#6B6560",
                 fontSize: "12px",
                 fontWeight: 500,
@@ -886,8 +888,6 @@ export default function StudyMode({
                 transition: "all 0.15s",
                 fontFamily: "inherit",
               }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "#F0EDE6")}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "transparent")}
             >
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                 <path d="M2 6.5A4.5 4.5 0 1 1 6.5 11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
@@ -915,7 +915,10 @@ export default function StudyMode({
               />
 
               <button
+                className="study-exit-button"
                 onClick={onExit}
+                onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+                onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -923,26 +926,11 @@ export default function StudyMode({
                   padding: "5px 12px",
                   height: "32px",
                   borderRadius: "6px",
-                  border: "1px solid #E2DED4",
-                  background: "transparent",
-                  color: "#6B6560",
                   fontSize: "12px",
                   fontWeight: 500,
                   cursor: "pointer",
                   transition: "all 0.15s",
                   fontFamily: "inherit",
-                }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.background = "#FEF2F2";
-                  el.style.borderColor = "#FCA5A5";
-                  el.style.color = "#DC2626";
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.background = "transparent";
-                  el.style.borderColor = "#E2DED4";
-                  el.style.color = "#6B6560";
                 }}
               >
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent } from "react";
 import DifficultyStars from "./DifficultyStars";
 import MarkdownContent from "./MarkdownContent";
 import { hasMarkdownImages } from "../images/markdownImages";
@@ -146,10 +146,10 @@ function CardItem({
   onEdit: () => void;
   isDragging: boolean;
   dropPreview: "before" | "after" | null;
-  onDragStart: (event: React.DragEvent<HTMLDivElement>) => void;
+  onDragStart: (event: DragEvent<HTMLDivElement>) => void;
   onDragEnd: () => void;
-  onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
-  onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
+  onDragOver: (event: DragEvent<HTMLDivElement>) => void;
+  onDrop: (event: DragEvent<HTMLDivElement>) => void;
   readOnly: boolean;
   immutable: boolean;
   allowDifficultyChanges: boolean;
@@ -180,7 +180,7 @@ function CardItem({
 
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return;
-    textarea.style.height = "0px";
+    textarea.setCssProps({ height: "0px" });
     textarea.style.height = `${textarea.scrollHeight}px`;
   };
 
@@ -190,7 +190,7 @@ function CardItem({
     resizeTextarea(answerRef.current);
   }, [isSelected, question, answer]);
 
-  const inlineInputStyle: React.CSSProperties = {
+  const inlineInputStyle: CSSProperties = {
     width: "100%",
     boxSizing: "border-box",
     border: "1px solid #C8C4B8",
@@ -216,6 +216,8 @@ function CardItem({
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
       onDrop={onDrop}
+      onMouseEnter={event => { if (!isSelected) event.currentTarget.classList.add('is-hovered') }}
+      onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
       style={{
         height: squareCards ? "auto" : `${cardHeight}px`,
         aspectRatio: squareCards ? "1 / 1" : undefined,
@@ -223,31 +225,17 @@ function CardItem({
         flexDirection: "column",
         background: "#FFFFFF",
         borderRadius: "10px",
-        border: isSelected ? "2px solid #4F46E5" : "1px solid #E2DED4",
+        border: isSelected ? "2px solid #4F46E5" : undefined,
         padding: isSelected ? "15px" : "16px",
         cursor: "pointer",
         transition: "all 0.15s",
         position: "relative",
         boxShadow: isSelected
           ? "0 0 0 3px rgba(79,70,229,0.1), 0 2px 8px rgba(0,0,0,0.06)"
-          : "0 1px 3px rgba(0,0,0,0.04)",
+          : undefined,
         overflow: "hidden",
         boxSizing: "border-box",
         opacity: isDragging ? 0.45 : 1,
-      }}
-      onMouseEnter={(e) => {
-        if (!isSelected) {
-          const el = e.currentTarget as HTMLElement;
-          el.style.boxShadow = "0 2px 10px rgba(0,0,0,0.09)";
-          el.style.borderColor = "#C8C4B8";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isSelected) {
-          const el = e.currentTarget as HTMLElement;
-          el.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)";
-          el.style.borderColor = "#E2DED4";
-        }
       }}
     >
       {/* Card number */}
@@ -395,7 +383,9 @@ function CardItem({
       )}
       {!immutable && <button
         type="button"
-        className="card-action-control"
+        className="card-action-control workspace-card-delete"
+        onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+        onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
         onClick={(event) => {
           event.stopPropagation();
           onDelete();
@@ -409,24 +399,12 @@ function CardItem({
           width: "25px",
           height: "25px",
           borderRadius: "5px",
-          border: "1px solid #E2DED4",
           background: "#FFFFFF",
-          color: "#9B9488",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: 0,
-        }}
-        onMouseEnter={(event) => {
-          const element = event.currentTarget as HTMLElement;
-          element.style.color = "#DC2626";
-          element.style.borderColor = "#FCA5A5";
-        }}
-        onMouseLeave={(event) => {
-          const element = event.currentTarget as HTMLElement;
-          element.style.color = "#9B9488";
-          element.style.borderColor = "#E2DED4";
         }}
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -1205,8 +1183,10 @@ export default function Workspace({
 
         {/* Add card */}
         {!readOnly && <button
-          className="app-accent-button"
+          className="app-accent-button workspace-add-card-button"
           onClick={onAddCard}
+          onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+          onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
           style={{
             display: "flex",
             alignItems: "center",
@@ -1215,7 +1195,6 @@ export default function Workspace({
             height: "32px",
             borderRadius: "7px",
             border: "none",
-            background: "#4F46E5",
             color: "#FFFFFF",
             fontSize: "12.5px",
             fontWeight: 600,
@@ -1223,12 +1202,6 @@ export default function Workspace({
             transition: "background 0.15s",
             fontFamily: "inherit",
           }}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLElement).style.background = "#4338CA")
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLElement).style.background = "#4F46E5")
-          }
         >
           <IconPlus />
           Add Card
@@ -1438,10 +1411,12 @@ export default function Workspace({
             ))}
 
             {!readOnly && <div
+              className="workspace-add-card-tile"
               onClick={onAddCard}
+              onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
+              onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
               style={{
                 borderRadius: "10px",
-                border: "1.5px dashed #D8D4C8",
                 padding: "16px",
                 cursor: "pointer",
                 display: "flex",
@@ -1452,19 +1427,6 @@ export default function Workspace({
                 minHeight: squareCards ? 0 : `${scaledCardHeight}px`,
                 aspectRatio: squareCards ? "1 / 1" : undefined,
                 transition: "all 0.15s",
-                color: "#9B9488",
-              }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.background = "#FFFFFF";
-                el.style.borderColor = "#9B9488";
-                el.style.color = "#6B6560";
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.background = "transparent";
-                el.style.borderColor = "#D8D4C8";
-                el.style.color = "#9B9488";
               }}
             >
               <div

@@ -13,7 +13,7 @@ interface Props {
   sourcePath?: string
 }
 
-const inlinePattern = /(!\[[^\]]*\]\([^\)\n]+\)|\*\*[^*]+\*\*|__[^_]+__|\+\+[^+]+\+\+|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]*\))/g
+const inlinePattern = /(!\[[^\]]*\]\([^)\n]+\)|\*\*[^*]+\*\*|__[^_]+__|\+\+[^+]+\+\+|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]*\))/g
 
 function stripRemoteImages(markdown: string): string {
   return markdown.replace(/!\[([^\]]*)\]\(([^)\n]+)\)/g, (raw, alt: string, path: string) => (
@@ -24,7 +24,7 @@ function stripRemoteImages(markdown: string): string {
 function renderInline(text: string, allowImages: boolean): ReactNode[] {
   return text.split(inlinePattern).filter(Boolean).map((part, index) => {
     if (part.startsWith('![')) {
-      const match = part.match(/^!\[([^\]]*)\]\([^\)\n]+\)$/)
+      const match = part.match(/^!\[([^\]]*)\]\([^)\n]+\)$/)
       if (!match || !allowImages) return part
       const path = part.slice(match[0].indexOf('](') + 2, -1)
       return <MarkdownImage key={index} alt={match[1].trim()} path={path.trim()} />
@@ -96,18 +96,23 @@ function addImageZoomControls(element: HTMLElement, onOpen: (src: string, alt: s
     const parent = image.parentNode
     if (!parent) continue
 
-    const wrapper = document.createElement('span')
-    wrapper.className = 'markdown-image'
+    const wrapper = createSpan({ cls: 'markdown-image' })
     parent.insertBefore(wrapper, image)
     wrapper.appendChild(image)
 
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.className = 'markdown-image-zoom'
+    const button = createEl('button', { cls: 'markdown-image-zoom', type: 'button' })
     const alt = image.alt || 'Flashcard image'
     button.setAttribute('aria-label', `Enlarge image: ${alt}`)
     button.title = 'Enlarge image'
-    button.innerHTML = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true"><circle cx="4.7" cy="4.7" r="3" stroke="currentColor" stroke-width="1.1"></circle><path d="M7 7l2.4 2.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"></path></svg>'
+    const icon = button.createSvg('svg', {
+      attr: { width: 11, height: 11, viewBox: '0 0 11 11', fill: 'none', 'aria-hidden': 'true' },
+    })
+    icon.createSvg('circle', {
+      attr: { cx: 4.7, cy: 4.7, r: 3, stroke: 'currentColor', 'stroke-width': 1.1 },
+    })
+    icon.createSvg('path', {
+      attr: { d: 'M7 7l2.4 2.4', stroke: 'currentColor', 'stroke-width': 1.1, 'stroke-linecap': 'round' },
+    })
     const openOverlay = (event: MouseEvent) => {
       event.preventDefault()
       event.stopPropagation()
