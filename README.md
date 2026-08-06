@@ -4,6 +4,8 @@ Flashcard Genius is an offline-first Obsidian plugin for browsing, studying, and
 
 Flashcard Genius is an independent community plugin and is not affiliated with or endorsed by Obsidian.
 
+- - -
+
 ## ✨ Why use it?
 
 - See an entire deck at once instead of one card at a time.
@@ -12,6 +14,8 @@ Flashcard Genius is an independent community plugin and is not affiliated with o
 - Edit the source Markdown and see the changes reflected in the plugin immediately.
 - Keep your notes, cards, and ratings under your control in the vault.
 - Use it offline: Flashcard Genius does not initiate network requests.
+
+- - -
 
 ## 🖼️ Screenshots
 
@@ -33,8 +37,10 @@ Cards are authored as Markdown tables. The example below is the basis of the sho
 
 ![Markdown table template](docs/Template.png)
 
-## 📥 Installation
+- - -
 
+## 📥 Manual Installation
+Download and install the plugin directly in Obsidian, or follow these steps:
 1. Build the plugin locally (see [Development](#development)).
 2. Copy `dist/main.js`, `dist/manifest.json`, and `dist/styles.css` into:
 
@@ -46,6 +52,8 @@ Cards are authored as Markdown tables. The example below is the basis of the sho
 4. Enable **Flashcard Genius** under **Settings → Community plugins**.
 
 The plugin opens as a normal Obsidian tab. You can also install the same three files from a verified plugin release when one is available.
+
+- - -
 
 ## 🗂️ Loading decks and images
 
@@ -59,6 +67,8 @@ Flashcard Genius adds **Open in Flashcard Genius** to the Obsidian file-menu.
 For an image quiz, use the image filename as the card name, the filename becomes the question shown on the answer side. Keep the image-quiz folder free of Markdown files and unrelated assets; folders containing Markdown are treated as Markdown-deck folders instead. Folder names determine the generated deck grouping.
 
 You can also use the command palette command **Open current note in Flashcard Genius** or configure a default folder in the plugin settings.
+
+- - -
 
 ## 📝 Markdown deck format
 
@@ -83,6 +93,8 @@ Each deck needs an H1 title, optional H2 topic headings, and one or more tables 
 
 Use normal Markdown in both cells: paragraphs, lists, emphasis, links, images, and mathematical notation rendered by Obsidian's Markdown renderer. Escape a literal pipe inside a cell as `\|`. Use `<br>` when you need a deliberate line break inside one table cell.
 
+- - -
+
 ## 🧭 The three main views
 
 ### Library
@@ -101,9 +113,13 @@ Study mode presents the front/question first. Click the card to flip it and reve
 
 Stats shows how many cards each deck contains at every difficulty level. Select a deck or difficulty slice to filter the card list, read the matching questions and answers, and start a study session with the filtered set.
 
+- - -
+
 ## 🎨 Themes and responsive layout
 
 Choose from the available colour themes in the top bar. The interface adapts its card grid, sidebar, and controls to the available width. Obsidian's interface, text, and monospace font variables are used so the plugin follows your vault's typography.
+
+- - -
 
 ## 🔒 Offline and privacy
 
@@ -118,6 +134,8 @@ advertising, or external APIs.
 ```
 
 Markdown files and local image assets are read through Obsidian's Vault APIs. Settings are stored through Obsidian's plugin data storage. The plugin does not require an account or API key. Documentation links in this README are ordinary links; if you open one manually, Obsidian or your operating system may handle it.
+
+- - -
 
 ## 🛠️ Development
 
@@ -137,6 +155,8 @@ npm run typecheck
 npm test
 npm audit
 ```
+
+- - -
 
 ## 📄 License
 
