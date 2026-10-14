@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type DragEvent } from 'react'
-import { Modal, Setting, type App } from 'obsidian'
 import DifficultyStars from './DifficultyStars'
 import { useImageAssets } from '../images/ImageAssetsContext'
 import { extractMarkdownImages, hasMarkdownImages, removeMarkdownImage, type MarkdownImageReference } from '../images/markdownImages'
@@ -12,7 +11,7 @@ interface Props {
   onDelete: (id: string) => void
   collapsed: boolean
   onToggleCollapse: () => void
-  app?: App
+  requestLinkUrl?: () => Promise<string | null>
 }
 
 function IconImage() {
@@ -73,69 +72,13 @@ function MarkdownToolbar({ onFormat }: { onFormat: (action: MarkdownAction) => v
           aria-label={button.title}
           onMouseDown={event => event.preventDefault()}
           onClick={() => { void onFormat(button.action) }}
-          style={{ minWidth: '25px', height: '24px', padding: '0 5px', borderRadius: '5px', border: '1px solid #E2DED4', background: '#FAFAF8', color: '#6B6560', cursor: 'pointer', fontSize: button.action === 'italic' ? '13px' : '11px', fontStyle: button.action === 'italic' ? 'italic' : 'normal', fontWeight: button.action === 'bold' ? 700 : 500, fontFamily: 'inherit' }}
+          style={{ minWidth: '25px', height: '24px', padding: '0 5px', borderRadius: '5px', border: '1px solid #E2DED4', background: '#FAFAF8', color: '#6B6560', cursor: 'pointer', fontSize: button.action === 'italic' ? 'calc(13px * var(--app-ui-font-scale, 1.125))' : 'calc(11px * var(--app-ui-font-scale, 1.125))', fontStyle: button.action === 'italic' ? 'italic' : 'normal', fontWeight: button.action === 'bold' ? 700 : 500, fontFamily: 'inherit' }}
         >
           {button.label}
         </button>
       ))}
     </div>
   )
-}
-
-class LinkUrlModal extends Modal {
-  private inputValue: string
-  private settled = false
-
-  constructor(app: App, initialValue: string, private readonly resolveResult: (value: string | null) => void) {
-    super(app)
-    this.inputValue = initialValue
-  }
-
-  onOpen(): void {
-    this.setTitle('Link URL')
-
-    new Setting(this.contentEl)
-      .setName('URL')
-      .addText(text => {
-        text.setValue(this.inputValue)
-        text.onChange(value => { this.inputValue = value })
-        text.inputEl.addEventListener('keydown', event => {
-          if (event.key !== 'Enter') return
-          event.preventDefault()
-          this.confirm()
-        })
-        window.requestAnimationFrame(() => {
-          text.inputEl.focus()
-          text.inputEl.select()
-        })
-      })
-
-    new Setting(this.contentEl)
-      .addButton(button => button
-        .setButtonText('Cancel')
-        .onClick(() => this.close()))
-      .addButton(button => button
-        .setButtonText('OK')
-        .setCta()
-        .onClick(() => this.confirm()))
-  }
-
-  onClose(): void {
-    this.contentEl.empty()
-    if (!this.settled) this.resolveResult(null)
-  }
-
-  private confirm(): void {
-    if (this.settled) return
-    this.settled = true
-    const value = this.inputValue
-    this.close()
-    this.resolveResult(value)
-  }
-}
-
-function requestLinkUrl(app: App, initialValue = ''): Promise<string | null> {
-  return new Promise(resolve => new LinkUrlModal(app, initialValue, resolve).open())
 }
 
 function toggleInline(text: string, prefix: string, suffix = prefix): string {
@@ -151,7 +94,7 @@ function toggleList(text: string, ordered: boolean): string {
   return lines.map((line, index) => ordered ? `${index + 1}. ${line}` : `- ${line}`).join('\n')
 }
 
-export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggleCollapse, app }: Props) {
+export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggleCollapse, requestLinkUrl }: Props) {
   const { storage } = useImageAssets()
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
@@ -224,8 +167,8 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
       const existingLink = selected.match(/^\[([^\]]+)\]\([^)]+\)$/)
       if (existingLink) replacement = existingLink[1]
       else {
-        if (!app) return
-        const url = await requestLinkUrl(app)
+        if (!requestLinkUrl) return
+        const url = await requestLinkUrl()
         if (!url) return
         replacement = `[${selected}](${url})`
       }
@@ -383,7 +326,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
             <line x1="8" y1="14" x2="13" y2="14" stroke="#C8C4B8" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </div>
-        <p style={{ fontSize: '12.5px', color: '#9B9488', textAlign: 'center', lineHeight: '1.5', margin: 0 }}>
+        <p style={{ fontSize: 'calc(12.5px * var(--app-ui-font-scale, 1.125))', color: '#9B9488', textAlign: 'center', lineHeight: '1.5', margin: 0 }}>
           Select a card to<br />edit its contents
         </p>
         <button
@@ -416,7 +359,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
     width: '100%',
     borderRadius: '7px',
     padding: '8px 10px',
-    fontSize: '12.5px',
+    fontSize: 'calc(12.5px * var(--app-ui-font-scale, 1.125))',
     color: '#111110',
     background: '#FAFAF8',
     outline: 'none',
@@ -427,7 +370,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
   }
 
   const labelStyle: CSSProperties = {
-    fontSize: '10.5px',
+    fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))',
     fontWeight: 600,
     letterSpacing: '0.05em',
     textTransform: 'uppercase' as const,
@@ -459,7 +402,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
           justifyContent: 'space-between',
         }}
       >
-        <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#111110' }}>Card Editor</span>
+        <span style={{ fontSize: 'calc(12.5px * var(--app-ui-font-scale, 1.125))', fontWeight: 600, color: '#111110' }}>Card Editor</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             className="editor-collapse-control"
@@ -564,13 +507,13 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
             <span style={{ color: '#C8C4B8' }}>
               <IconImage />
             </span>
-            <span style={{ fontSize: '11.5px', color: '#9B9488', textAlign: 'center' }}>
+            <span style={{ fontSize: 'calc(11.5px * var(--app-ui-font-scale, 1.125))', color: '#9B9488', textAlign: 'center' }}>
               Drop image or click to upload
             </span>
-            <span style={{ fontSize: '10.5px', color: '#C8C4B8' }}>PNG, JPG, WebP up to 5MB</span>
+            <span style={{ fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', color: '#C8C4B8' }}>PNG, JPG, WebP up to 5MB</span>
           </button>
           {uploadError && (
-            <p role="alert" style={{ margin: '6px 0 0', color: '#DC2626', fontSize: '10.5px', lineHeight: 1.4 }}>
+            <p role="alert" style={{ margin: '6px 0 0', color: '#DC2626', fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', lineHeight: 1.4 }}>
               {uploadError}
             </p>
           )}
@@ -603,7 +546,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
                   >
                     <IconTrash />
                   </button>
-                  <span style={{ display: 'block', padding: '1px 4px 3px', color: '#6B6560', fontSize: '10.5px', overflowWrap: 'anywhere' }}>
+                  <span style={{ display: 'block', padding: '1px 4px 3px', color: '#6B6560', fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', overflowWrap: 'anywhere' }}>
                     {image.path}
                   </span>
                 </div>
@@ -628,7 +571,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
               type="button"
               onClick={() => { setDifficulty(0); draftRef.current.difficulty = 0; dirtyRef.current = true }}
               disabled={difficulty === 0}
-              style={{ height: '26px', padding: '0 8px', borderRadius: '5px', border: '1px solid #E2DED4', background: 'transparent', color: difficulty === 0 ? '#C8C4B8' : '#6B6560', cursor: difficulty === 0 ? 'not-allowed' : 'pointer', fontSize: '11px', fontFamily: 'inherit' }}
+              style={{ height: '26px', padding: '0 8px', borderRadius: '5px', border: '1px solid #E2DED4', background: 'transparent', color: difficulty === 0 ? '#C8C4B8' : '#6B6560', cursor: difficulty === 0 ? 'not-allowed' : 'pointer', fontSize: 'calc(11px * var(--app-ui-font-scale, 1.125))', fontFamily: 'inherit' }}
             >
               Clear stars
             </button>
@@ -656,7 +599,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
             background: '#4F46E5',
             color: '#FFFFFF',
             cursor: 'pointer',
-            fontSize: '12px',
+            fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))',
             fontWeight: 600,
             fontFamily: 'inherit',
           }}
@@ -708,7 +651,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
               display: 'flex',
               alignItems: 'center',
               gap: '7px',
-              fontSize: '11px',
+              fontSize: 'calc(11px * var(--app-ui-font-scale, 1.125))',
               fontWeight: 600,
               fontFamily: 'inherit',
             }}

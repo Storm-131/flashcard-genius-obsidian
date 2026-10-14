@@ -225,66 +225,6 @@
   border-color: var(--app-panel-border) !important;
 }
 
-/* Keep card images inside the available card height without cropping them. */
-.flashcard-genius-root .card-image-area {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  padding: 10px 0 0;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.flashcard-genius-root .card-image-area .card-image-content {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.flashcard-genius-root .card-image-area .card-image-content > p,
-.flashcard-genius-root .image-question-content > p {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  width: 100%;
-  margin: 0;
-  align-items: center;
-  justify-content: center;
-}
-
-.flashcard-genius-root .card-image-area .card-image-content .markdown-image,
-.flashcard-genius-root .image-question-content .markdown-image {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  margin: 0;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9px;
-  overflow: hidden;
-}
-
-.flashcard-genius-root .card-image-area .card-image-content .markdown-image > img,
-.flashcard-genius-root .image-question-content .markdown-image > img {
-  display: block;
-  width: 100% !important;
-  max-width: 100% !important;
-  height: 100% !important;
-  max-height: 100% !important;
-  object-fit: contain;
-  border-radius: 9px;
-}
-
 @media (max-width: 1024px) {
 .flashcard-genius-root .workspace-card .card-action-control:not(.difficulty-stars):not(.source-card-control),
 .flashcard-genius-root .flip-card .card-action-control:not(.difficulty-stars) {
@@ -323,4 +263,19 @@
   color: #6B6560;
   font-size: 13px;
   text-align: center;
+}
+
+/* The native settings tab uses the same UI scale as the React controls. */
+.flashcard-genius-settings {
+  --app-ui-font-scale: 1.125;
+}
+.flashcard-genius-settings .setting-item-name {
+  font-size: calc(var(--font-ui-medium, 14px) * var(--app-ui-font-scale));
+}
+.flashcard-genius-settings .setting-item-description,
+.flashcard-genius-settings :is(button, select, input) {
+  font-size: calc(var(--font-ui-small, 12px) * var(--app-ui-font-scale));
+}
+.flashcard-genius-settings button {
+  font-weight: 600;
 }

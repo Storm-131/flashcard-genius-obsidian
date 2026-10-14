@@ -1,63 +1,23 @@
 import type { App } from 'obsidian'
 import { TFile } from 'obsidian'
 import { parseDeckMarkdown } from '@flashcard-genius/core'
+import { isTableDivider, parseTableCard, tableCells } from '@flashcard-genius/core/markdownTable'
 import type { CardSource } from './vaultLoader'
 
 export class StarPersistenceError extends Error {}
 
 export class StarConflictError extends StarPersistenceError {}
 
-function splitTableRow(line: string): string[] {
-  const cells: string[] = []
-  let current = ''
-  const normalized = line.trim().replace(/^\||\|$/g, '')
-  for (let index = 0; index < normalized.length; index += 1) {
-    const character = normalized[index]
-    if (character === '\\' && normalized[index + 1] === '|') {
-      current += '\\|'
-      index += 1
-      continue
-    }
-    if (character === '|') {
-      cells.push(current.trim())
-      current = ''
-      continue
-    }
-    current += character
-  }
-  cells.push(current.trim())
-  return cells
-}
-
-function unescapeTableCell(value: string): string {
-  return value.replace(/\\\|/g, '|').replace(/<br\s*\/?>/gi, '\n').trim()
-}
-
-function isTableDivider(line: string): boolean {
-  return /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(line)
-}
-
-function isDifficultyHeader(value: string): boolean {
-  return value.replace(/[\uFE0E\uFE0F]/g, '').trim() === '⭐'
-}
-
 function flattenDocumentCards(markdown: string, fileName: string) {
   return parseDeckMarkdown(markdown, fileName).topics.flatMap(topic => topic.cards)
 }
 
 function replaceDifficultyCell(line: string, difficulty: number): string {
-  const separators: number[] = []
-  for (let index = 0; index < line.length; index += 1) {
-    if (line[index] === '|' && line[index - 1] !== '\\') separators.push(index)
-  }
-  if (separators.length < 3) throw new StarPersistenceError('The card row has no writable star column.')
-
-  const cellStart = separators[separators.length - 2] + 1
-  const cellEnd = separators[separators.length - 1]
-  const originalCell = line.slice(cellStart, cellEnd)
-  const leadingWhitespace = originalCell.match(/^\s*/)?.[0] ?? ''
-  const trailingWhitespace = originalCell.match(/\s*$/)?.[0] ?? ''
-  return `${line.slice(0, cellStart)}${leadingWhitespace}${difficulty}${trailingWhitespace}${line.slice(cellEnd)}`
+  const cell = tableCells(line).slice(-1)[0]
+  if (!cell) throw new StarPersistenceError('The card row has no writable difficulty column.')
+  const originalCell = line.slice(cell.start, cell.end)
+  const [, leadingWhitespace, , trailingWhitespace] = originalCell.match(/^(\s*)(.*?)(\s*)$/)!
+  return `${line.slice(0, cell.start)}${leadingWhitespace}${difficulty}${trailingWhitespace}${line.slice(cell.end)}`
 }
 
 function updateDifficultyInMarkdown(markdown: string, source: CardSource, difficulty: number): string {
@@ -68,18 +28,17 @@ function updateDifficultyInMarkdown(markdown: string, source: CardSource, diffic
   for (let index = 0; index < lines.length; index += 1) {
     if (!lines[index].trim().startsWith('|') || !isTableDivider(lines[index + 1] ?? '')) continue
 
-    const header = splitTableRow(lines[index])
-    const hasDifficultyColumn = header.length >= 3 && isDifficultyHeader(header[header.length - 1])
+    const columnCount = tableCells(lines[index]).length
+    const hasDifficultyColumn = columnCount >= 3
     index += 2
 
     while (index < lines.length && lines[index].trim().startsWith('|')) {
-      const cells = splitTableRow(lines[index])
-      const question = unescapeTableCell(cells[0] ?? '')
-      const answerCells = hasDifficultyColumn ? cells.slice(1, -1) : cells.slice(1)
-      const answer = unescapeTableCell(answerCells.join('|'))
-      if (question && answer) {
+      const card = parseTableCard(lines[index], columnCount)
+      if (card?.question && card.answer) {
         if (cardIndex === source.cardIndex) {
-          if (!hasDifficultyColumn) throw new StarPersistenceError('This card table has no final ⭐ column.')
+          if (!hasDifficultyColumn || tableCells(lines[index]).length < columnCount) {
+            throw new StarPersistenceError('This card table has no final difficulty cell. Add the missing column or cell in Obsidian first.')
+          }
           lines[index] = replaceDifficultyCell(lines[index], difficulty)
           return lines.join(newline)
         }

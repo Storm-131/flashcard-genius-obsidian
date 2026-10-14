@@ -1,12 +1,22 @@
-import type { Card, Category, Deck, DeckTopic } from './types'
-import type { DeckDocument } from './importExportTypes'
+import type { Card, Category, Deck, DeckTopic } from "./types"
+import type { DeckDocument } from "./importExportTypes"
 
-const deckColors = ['#4F46E5', '#0EA5E9', '#16A34A', '#D97706', '#DC2626', '#7C3AED', '#DB2777', '#0891B2']
+const deckColors = [
+  "#4F46E5",
+  "#0EA5E9",
+  "#16A34A",
+  "#D97706",
+  "#DC2626",
+  "#7C3AED",
+  "#DB2777",
+  "#0891B2",
+]
 
 function createId(prefix: string): string {
-  const random = typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const random =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
   return `${prefix}-${random}`
 }
 
@@ -18,7 +28,9 @@ export interface MaterializedDecks {
   cardOrderByDeck: Record<string, string[]>
 }
 
-export function materializeDeckDocuments(documents: DeckDocument[]): MaterializedDecks {
+export function materializeDeckDocuments(
+  documents: DeckDocument[],
+): MaterializedDecks {
   const categories: Category[] = []
   const categoryIdsByName = new Map<string, string>()
   const decks: Deck[] = []
@@ -27,15 +39,18 @@ export function materializeDeckDocuments(documents: DeckDocument[]): Materialize
   const cardOrderByDeck: Record<string, string[]> = {}
 
   for (const document of documents) {
-    const deckId = createId('deck')
+    const deckId = createId("deck")
     const rawCategoryName = document.categoryName?.trim()
-    const categoryName = rawCategoryName?.toLocaleLowerCase() === 'allgemein' ? 'General' : rawCategoryName
+    const categoryName =
+      rawCategoryName?.toLocaleLowerCase() === "allgemein"
+        ? "General"
+        : rawCategoryName
     let categoryId: string | null = null
     if (categoryName) {
       const categoryKey = categoryName.toLocaleLowerCase()
       categoryId = categoryIdsByName.get(categoryKey) ?? null
       if (!categoryId) {
-        categoryId = createId('category')
+        categoryId = createId("category")
         categoryIdsByName.set(categoryKey, categoryId)
         categories.push({ id: categoryId, name: categoryName })
       }
@@ -52,15 +67,18 @@ export function materializeDeckDocuments(documents: DeckDocument[]): Materialize
     cardOrderByDeck[deckId] = []
 
     for (const documentTopic of document.topics) {
-      const topicId = createId('topic')
+      const topicId = createId("topic")
       topics.push({ id: topicId, deckId, name: documentTopic.name })
       for (const documentCard of documentTopic.cards) {
         const card: Card = {
-          id: createId('card'),
+          id: createId("card"),
           deckId,
           topicId,
           question: documentCard.question,
           answer: documentCard.answer,
+          ...(documentCard.answerParts
+            ? { answerParts: documentCard.answerParts }
+            : {}),
           imageAsQuestion: false,
           tags: [],
           difficulty: documentCard.difficulty,

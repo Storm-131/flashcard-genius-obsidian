@@ -1,53 +1,10 @@
 import { ImportExportError } from './errors'
 import type { DeckDocument, DeckDocumentTopic } from './importExportTypes'
-
-function splitTableRow(line: string): string[] {
-  const cells: string[] = []
-  let current = ''
-  const normalized = line.trim().replace(/^\||\|$/g, '')
-  for (let index = 0; index < normalized.length; index += 1) {
-    const character = normalized[index]
-    if (character === '\\' && normalized[index + 1] === '|') {
-      current += '\\|'
-      index += 1
-      continue
-    }
-    if (character === '|') {
-      cells.push(current.trim())
-      current = ''
-      continue
-    }
-    current += character
-  }
-  cells.push(current.trim())
-  return cells
-}
-
-function unescapeTableCell(value: string): string {
-  return value
-    .replace(/\\\|/g, '|')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .trim()
-}
-
-function isTableDivider(line: string): boolean {
-  return /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(line)
-}
-
-function isDifficultyHeader(value: string): boolean {
-  return value.replace(/[\uFE0E\uFE0F]/g, '').trim() === '⭐'
-}
+import { isTableDivider, parseTableCard, tableCells } from './markdownTable'
 
 function normalizeTopicName(value: string): string {
   const trimmed = value.trim()
   return trimmed.toLocaleLowerCase() === 'allgemein' ? 'General' : trimmed
-}
-
-function parseDifficulty(value: string): number {
-  const normalized = value.trim()
-  if (!normalized) return 0
-  const difficulty = Number(normalized)
-  return Number.isInteger(difficulty) && difficulty >= 1 && difficulty <= 5 ? difficulty : 0
 }
 
 const legacyDelimiterPattern = /^\s*-\s+-\s+-\s*$/
@@ -125,29 +82,18 @@ export function parseDeckMarkdown(markdown: string, sourceFileName?: string): De
       topics.push(currentTopic)
     }
 
-    const header = splitTableRow(lines[index])
+    const header = tableCells(lines[index])
     if (header.length < 2) {
       problems.push('A card table requires Question and Answer columns.')
       continue
     }
-    const difficultyColumnIndex = header.length >= 3 && isDifficultyHeader(header[header.length - 1])
-      ? header.length - 1
-      : -1
     index += 2
     while (index < lines.length && lines[index].trim().startsWith('|')) {
-      const cells = splitTableRow(lines[index])
-      if (cells.length < 2) {
-        problems.push('A table row does not contain both a question and an answer.')
-      } else {
-        const question = unescapeTableCell(cells[0])
-        const answerCells = difficultyColumnIndex >= 0 ? cells.slice(1, -1) : cells.slice(1)
-        const answer = unescapeTableCell(answerCells.join('|'))
-        const difficulty = difficultyColumnIndex >= 0
-          ? parseDifficulty(unescapeTableCell(cells[cells.length - 1] ?? ''))
-          : 0
-        if (!question) problems.push('A card has no question.')
-        if (!answer) problems.push(`The card "${question || 'Untitled'}" has no answer.`)
-        if (question && answer) currentTopic.cards.push({ question, answer, difficulty })
+      const card = parseTableCard(lines[index], header.length)
+      if (card) {
+        if (!card.question) problems.push('A card has no question.')
+        if (!card.answer) problems.push(`The card "${card.question || 'Untitled'}" has no answer.`)
+        if (card.question && card.answer) currentTopic.cards.push(card)
       }
       index += 1
     }

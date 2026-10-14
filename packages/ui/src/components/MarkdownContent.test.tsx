@@ -1,64 +1,47 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { ImageAssetsProvider } from '../images/ImageAssetsContext'
 import { InMemoryImageStorage } from '../images/imageStorage'
 import MarkdownContent from './MarkdownContent'
-import type { MarkdownRenderContext } from '../markdownRenderer'
+import { FallbackMathContext } from '../markdownRenderer'
+import { renderPreviewMath } from '../../../../web/src/mathRenderer'
 
 function renderWithStorage(content: string, storage = new InMemoryImageStorage()) {
   const result = render(
     <ImageAssetsProvider storage={storage}>
-      <MarkdownContent content={content} />
+      <FallbackMathContext.Provider value={renderPreviewMath}><MarkdownContent content={content} /></FallbackMathContext.Provider>
     </ImageAssetsProvider>,
   )
   return { ...result, storage }
 }
 
 describe('MarkdownContent images', () => {
-  it('passes inline and display math to Obsidian MarkdownRenderer with the source context', async () => {
-    const app = {} as MarkdownRenderContext['app']
-    const component = {} as MarkdownRenderContext['component']
-    const renderMarkdown = vi.fn(async (_app, markdown, element) => {
-      element.textContent = markdown
-    })
-    const markdownContext: MarkdownRenderContext = { app, component, render: renderMarkdown }
-    const content = 'Inline $x^2 + y^2 = z^2$ and display $$\\frac{a}{b}$$.'
-    const { container } = render(
-      <MarkdownContent content={content} markdownContext={markdownContext} sourcePath="Decks/Algebra.md" />,
-    )
-
-    await waitFor(() => expect(container).toHaveTextContent(content))
-    expect(renderMarkdown).toHaveBeenCalledWith(app, content, expect.any(HTMLDivElement), 'Decks/Algebra.md', component)
+  it.each(['100', '250', '300x200'])('renders Obsidian images without imposing the source size %s', async size => {
+    const storage = new InMemoryImageStorage()
+    const asset = storage.store(new Blob(['image'], { type: 'image/webp' }), 'Sperber.webp')
+    renderWithStorage(`![[${asset.path}|${size}]]`, storage)
+    const image = await screen.findByRole('img', { name: 'Sperber.webp' })
+    expect(image).toHaveAttribute('src', expect.stringMatching(/^blob:test-/))
+    expect(image).not.toHaveAttribute('width')
+    expect(image).not.toHaveAttribute('height')
+    expect(image).not.toHaveStyle({ width: `${size}px` })
   })
 
-  it('does not pass remote Markdown images to Obsidian rendering', async () => {
-    const renderMarkdown = vi.fn(async (_app, markdown, element) => { element.textContent = markdown })
-    const markdownContext: MarkdownRenderContext = {
-      app: {} as MarkdownRenderContext['app'],
-      component: {} as MarkdownRenderContext['component'],
-      render: renderMarkdown,
-    }
-    render(
-      <MarkdownContent content="![Remote](https://example.com/card.png) ![Local](img/card.png)" markdownContext={markdownContext} />,
-    )
-
-    await waitFor(() => expect(renderMarkdown).toHaveBeenCalled())
-    expect(renderMarkdown.mock.calls[0]?.[1]).toBe('Remote ![Local](img/card.png)')
+  it('shows one paragraph gap between merged answers and preserves inline breaks', () => {
+    const { container } = renderWithStorage('**First**\nDetail\n\n\n- Second\n- Third\n\n![Bird](img/bird.webp)')
+    expect(screen.getByText('First').tagName).toBe('STRONG')
+    expect(screen.getByText('Detail')).toBeInTheDocument()
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    expect(container.querySelectorAll('.markdown-paragraph-gap')).toHaveLength(2)
   })
 
-  it('adds the zoom control to images rendered by Obsidian', async () => {
-    const markdownContext: MarkdownRenderContext = {
-      app: {} as MarkdownRenderContext['app'],
-      component: {} as MarkdownRenderContext['component'],
-      render: vi.fn(async (_app, _markdown, element) => {
-        element.innerHTML = '<p><img src="app://local/card.png" alt="Rendered card"></p>'
-      }),
-    }
-    render(<MarkdownContent content="![Rendered card](img/card.png)" markdownContext={markdownContext} />)
+  it('renders inline LaTeX in text and nested formatting', () => {
+    const { container } = renderWithStorage('The formula is $x^2 + y^2 = z^2$ and **\\(\\frac{a}{b}\\)**.')
 
-    const zoomButton = await screen.findByRole('button', { name: 'Enlarge image: Rendered card' })
-    fireEvent.click(zoomButton)
-    expect(screen.getByRole('dialog', { name: 'Enlarged view: Rendered card' })).toBeInTheDocument()
+    const formulas = container.querySelectorAll('.katex')
+    expect(formulas).toHaveLength(2)
+    expect(formulas[0].innerHTML).toContain('x^2 + y^2 = z^2')
+    expect(formulas[1].innerHTML).toContain('\\frac{a}{b}')
   })
 
   it('rendert Markdown-Bilder aus dem internen Blob-Speicher und gibt die Object URL frei', async () => {

@@ -1,0 +1,66 @@
+name: Release Obsidian plugin
+
+on:
+  push:
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: obsidian-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Check out version tag
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+
+      - name: Install plugin and preview dependencies
+        run: npm ci
+
+      - name: Validate tag and synchronized versions
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: npm run release:check -- "$RELEASE_TAG" --repository "$RELEASE_REPOSITORY"
+
+      - name: Install browser for layout checks
+        run: npx playwright install --with-deps chromium
+
+      - name: Run tests, type checks and production builds
+        run: npm run release:verify
+
+      - name: Create release draft with plugin assets and publish it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          assets=(dist/main.js dist/manifest.json dist/styles.css)
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists; refusing to replace it or its assets."
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" "${assets[@]}" --verify-tag --draft --title "$RELEASE_TAG" --generate-notes
+          names=$(gh release view "$RELEASE_TAG" --json assets --jq '[.assets[].name] | sort | join(",")')
+          if [ "$names" != "main.js,manifest.json,styles.css" ]; then
+            echo "The draft does not contain exactly the three plugin assets."
+            exit 1
+          fi
+          gh release edit "$RELEASE_TAG" --draft=false

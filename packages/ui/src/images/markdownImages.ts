@@ -6,13 +6,20 @@ export interface MarkdownImageReference {
   end: number
 }
 
-const markdownImagePattern = /!\[([^\]]*)\]\(([^)\n]+)\)/g
+const markdownImagePattern = /!\[([^\]]*)\]\(([^)\n]+)\)|!\[\[([^\]\n]+)\]\]/g
+
+function imageParts(alt: string | undefined, path: string | undefined, wiki: string | undefined) {
+  if (wiki !== undefined) {
+    const [wikiPath] = wiki.replace(/\\\|/g, '|').split('|')
+    return { alt: wikiPath.trim().split('/').pop() ?? '', path: wikiPath.trim() }
+  }
+  return { alt: (alt ?? '').trim(), path: (path ?? '').trim() }
+}
 
 export function extractMarkdownImages(markdown: string): MarkdownImageReference[] {
   markdownImagePattern.lastIndex = 0
   return [...markdown.matchAll(markdownImagePattern)].map(match => ({
-    alt: match[1].trim(),
-    path: match[2].trim(),
+    ...imageParts(match[1], match[2], match[3]),
     raw: match[0],
     start: match.index ?? 0,
     end: (match.index ?? 0) + match[0].length,
@@ -44,9 +51,13 @@ export function removeMarkdownImage(markdown: string, image: MarkdownImageRefere
 
 export function rewriteMarkdownImagePaths(markdown: string, paths: ReadonlyMap<string, string>): string {
   markdownImagePattern.lastIndex = 0
-  return markdown.replace(markdownImagePattern, (raw, alt: string, path: string) => {
-    const trimmedPath = path.trim()
-    const replacement = paths.get(trimmedPath) ?? paths.get(trimmedPath.replace(/^\.\//, ''))
-    return replacement ? `![${alt}](${replacement})` : raw
+  return markdown.replace(markdownImagePattern, (raw, alt: string | undefined, path: string | undefined, wiki: string | undefined) => {
+    const image = imageParts(alt, path, wiki)
+    const replacement = paths.get(image.path) ?? paths.get(image.path.replace(/^\.\//, ''))
+    if (!replacement) return raw
+    // Preserve Obsidian sizing/alias syntax while resolving the vault path.
+    return wiki !== undefined
+      ? raw.replace(wiki.split(/\\?\|/)[0], replacement)
+      : `![${alt}](${replacement})`
   })
 }

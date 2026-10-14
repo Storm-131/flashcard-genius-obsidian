@@ -1,7 +1,7 @@
 {
   "name": "flashcard-genius-obsidian",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Standalone source repository for the Flashcard Genius Obsidian community plugin.",
   "type": "module",
   "workspaces": [
@@ -11,16 +11,27 @@
     "dev": "node esbuild.config.mjs --watch",
     "build": "tsc --noEmit -p tsconfig.json && node esbuild.config.mjs --production",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run --config vitest.config.ts"
+    "test": "vitest run --config vitest.config.ts && node --test scripts/release.test.mjs",
+    "dev:preview": "vite --config web/vite.config.ts",
+    "build:preview": "vite build --config web/vite.config.ts",
+    "preview": "vite preview --config web/vite.config.ts",
+    "typecheck:web": "tsc --noEmit -p web/tsconfig.json",
+    "test:browser": "playwright test",
+    "deploy": "npm run build && node scripts/deploy.mjs",
+    "release:check": "node scripts/check-release.mjs",
+    "release:prepare": "node scripts/prepare-release.mjs",
+    "release:verify": "npm run release:check && npm test && npm run typecheck && npm run typecheck:web && npm run build:preview && npm run build && npm run release:check -- --build && npm run test:browser"
   },
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=24.0.0"
   },
   "dependencies": {
-    "@flashcard-genius/core": "1.0.0",
-    "@flashcard-genius/ui": "1.0.0",
+    "@flashcard-genius/core": "1.0.2",
+    "@flashcard-genius/ui": "1.0.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "jszip": "^3.10.1",
+    "katex": "^0.18.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.0",
@@ -32,6 +43,11 @@
     "jsdom": "^29.1.1",
     "obsidian": "^1.13.1",
     "typescript": "^5.7.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "@playwright/test": "^1.64.0",
+    "@tailwindcss/vite": "^4.0.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "tailwindcss": "^4.0.0",
+    "vite": "^8.0.0"
   }
 }

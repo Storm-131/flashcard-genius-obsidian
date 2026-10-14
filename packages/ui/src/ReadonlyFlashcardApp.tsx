@@ -49,7 +49,7 @@ export default function ReadonlyFlashcardApp({
   const [searchQuery, setSearchQuery] = useState('')
   const [sortOrder, setSortOrder] = useState<SortOrder>('default')
   const [darkMode, setDarkMode] = useState(false)
-  const [colorScheme, setColorScheme] = useState<ColorScheme>('neutral')
+  const [colorScheme, setColorScheme] = useState<ColorScheme>('emerald')
   const [showStars, setShowStars] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const wasNarrowRef = useRef(false)

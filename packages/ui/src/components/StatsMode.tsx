@@ -89,11 +89,11 @@ export default function StatsMode({ cards, decks, onStudyCards, markdownContext,
     <main className="stats-mode" style={{ flex: 1, overflowY: 'auto', padding: '24px', background: 'var(--flashcard-genius-main, #F7F6F2)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', gap: '16px' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '20px', color: '#111110' }}>Difficulty statistics</h1>
-          <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#6B6560' }}>Click a set to filter its cards. Click it again to clear the selection.</p>
+          <h1 style={{ margin: 0, fontSize: 'calc(20px * var(--app-ui-font-scale, 1.125))', color: '#111110' }}>Difficulty statistics</h1>
+          <p style={{ margin: '4px 0 0', fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))', color: '#6B6560' }}>Click a set to filter its cards. Click it again to clear the selection.</p>
         </div>
         {(selectedDeckId !== null || selectedDifficulty !== null) && (
-          <button onClick={() => { setSelectedDeckId(null); setSelectedDifficulty(null) }} style={{ padding: '7px 10px', border: '1px solid #E2DED4', borderRadius: '6px', background: '#FFFFFF', color: '#6B6560', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px' }}>
+          <button onClick={() => { setSelectedDeckId(null); setSelectedDifficulty(null) }} style={{ padding: '7px 10px', border: '1px solid #E2DED4', borderRadius: '6px', background: '#FFFFFF', color: '#6B6560', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))' }}>
             Clear filter
           </button>
         )}
@@ -120,10 +120,10 @@ export default function StatsMode({ cards, decks, onStudyCards, markdownContext,
               }}
               style={{ background: isSelected ? 'var(--app-accent-soft, #EEF2FF)' : '#FFFFFF', border: isSelected ? '2px solid var(--app-accent, #4F46E5)' : '1px solid #E2DED4', borderRadius: '10px', padding: isSelected ? '13px' : '14px', cursor: 'pointer', boxShadow: isSelected ? '0 0 0 2px color-mix(in srgb, var(--app-accent, #4F46E5) 16%, transparent)' : 'none', transition: 'all 0.15s' }}
             >
-              <h2 style={{ margin: '0 0 10px', fontSize: '13px', color: '#111110' }}>{deck.name}</h2>
+              <h2 style={{ margin: '0 0 10px', fontSize: 'calc(13px * var(--app-ui-font-scale, 1.125))', color: '#111110' }}>{deck.name}</h2>
               <div onClick={event => event.stopPropagation()} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 <PieChart counts={counts} onSelect={difficulty => { setSelectedDeckId(deck.id); setSelectedDifficulty(difficulty) }} />
-                <div style={{ display: 'grid', gap: '3px', fontSize: '11px', color: '#6B6560' }}>
+                <div style={{ display: 'grid', gap: '3px', fontSize: 'calc(11px * var(--app-ui-font-scale, 1.125))', color: '#6B6560' }}>
                   {counts.map((count, index) => <span key={index}><span style={{ color: difficultyColors[index] }}>●</span> {index} {index === 1 ? 'star' : 'stars'}: {count}</span>)}
                 </div>
               </div>
@@ -134,13 +134,13 @@ export default function StatsMode({ cards, decks, onStudyCards, markdownContext,
 
       <section className="stats-table-panel" style={{ background: '#FFFFFF', color: '#111110', border: '1px solid #E2DED4', borderRadius: '10px', overflow: 'hidden' }}>
         <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--app-panel-border, #E2DED4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#111110' }}>{filteredCards.length} cards</span>
-          <button disabled={filteredCards.length === 0} onClick={() => onStudyCards(filteredCards)} style={{ padding: '7px 10px', border: 'none', borderRadius: '6px', background: filteredCards.length ? '#4F46E5' : '#E2DED4', color: '#FFFFFF', cursor: filteredCards.length ? 'pointer' : 'not-allowed', fontFamily: 'inherit', fontSize: '12px', fontWeight: 600 }}>
+          <span style={{ fontSize: 'calc(13px * var(--app-ui-font-scale, 1.125))', fontWeight: 600, color: '#111110' }}>{filteredCards.length} cards</span>
+          <button disabled={filteredCards.length === 0} onClick={() => onStudyCards(filteredCards)} style={{ padding: '7px 10px', border: 'none', borderRadius: '6px', background: filteredCards.length ? '#4F46E5' : '#E2DED4', color: '#FFFFFF', cursor: filteredCards.length ? 'pointer' : 'not-allowed', fontFamily: 'inherit', fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))', fontWeight: 600 }}>
             Study filtered cards
           </button>
         </div>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#111110', background: '#FFFFFF' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))', color: '#111110', background: '#FFFFFF' }}>
             <thead style={{ background: '#FFFFFF' }}>
               <tr>
                 {([['question', 'Front'], ['answer', 'Back'], ['difficulty', 'Difficulty']] as const).map(([column, label]) => (

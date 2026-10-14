@@ -1,7 +1,14 @@
+export interface CardAnswerPart {
+  content: string
+  /** Zero-based position among the answer columns in the source table. */
+  columnIndex: number
+}
+
 export interface DeckDocumentCard {
   question: string
   answer: string
   difficulty: number
+  answerParts?: CardAnswerPart[]
 }
 
 export interface DeckDocumentTopic {

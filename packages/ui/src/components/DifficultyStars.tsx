@@ -34,7 +34,7 @@ export default function DifficultyStars({ value, onChange, className, darkBackgr
               padding: '1px',
               cursor: readOnly ? 'default' : 'pointer',
               color: selected ? ratingColors[Math.max(0, Math.min(4, value - 1))] : darkBackground ? 'rgba(255,255,255,0.42)' : '#D8D4C8',
-              fontSize: '17px',
+              fontSize: 'calc(17px * var(--app-ui-font-scale, 1.125))',
               lineHeight: 1,
             }}
           >

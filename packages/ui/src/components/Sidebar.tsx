@@ -1,3 +1,4 @@
+import { cardReferenceName } from '../cardLabels'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { AppMode, Card, Category, Deck, DeckTopic } from '../types'
 
@@ -80,16 +81,6 @@ function IconSearch() {
   )
 }
 
-function plainTextPreview(value: string): string {
-  return value
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/\*\*|__|\+\+|`/g, '')
-    .replace(/\*([^*]+)\*/g, '$1')
-    .replace(/_([^_]+)_/g, '$1')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
 
 function readStoredSidebarWidth(): number {
   if (typeof window === 'undefined') return 224
@@ -171,7 +162,7 @@ export default function Sidebar({
         .map(category => category.name),
       ...visibleDecksForSizing.map(deck => deck.name),
       ...topics.filter(topic => visibleDecksForSizing.some(deck => deck.id === topic.deckId) && expandedDeckIds.has(topic.deckId)).map(topic => topic.name),
-      ...visibleCardsForSizing.map(card => plainTextPreview(card.question)),
+      ...visibleCardsForSizing.map(card => cardReferenceName(card)),
       'All Decks',
       'Collapse all',
       'Clear loaded decks',
@@ -321,12 +312,12 @@ export default function Sidebar({
               resetDragState()
             }}
             onClick={() => onSelectCard(card.id)}
-            title={card.question}
+            title={cardReferenceName(card)}
             onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
             onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
-            style={{ width: '100%', border: 'none', color: '#6B6560', cursor: 'grab', padding: '4px 5px 4px 18px', textAlign: 'left', fontFamily: 'inherit', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            style={{ width: '100%', border: 'none', color: '#6B6560', cursor: 'grab', padding: '4px 5px 4px 18px', textAlign: 'left', fontFamily: 'inherit', fontSize: 'calc(11px * var(--app-ui-font-scale, 1.125))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
           >
-            {plainTextPreview(card.question)}
+            {cardReferenceName(card)}
           </button>
         </div>
       )
@@ -361,7 +352,7 @@ export default function Sidebar({
                   if (event.key === 'Escape') setEditingTopicId(null)
                 }}
                 onBlur={() => { onRenameTopic(topic.id, editedTopicName); setEditingTopicId(null) }}
-                style={{ flex: 1, minWidth: 0, height: '23px', padding: '0 5px', borderRadius: '4px', border: '1px solid #C8C4B8', background: '#F7F6F2', color: '#4A4640', fontSize: '10.5px', fontFamily: 'inherit' }}
+                style={{ flex: 1, minWidth: 0, height: '23px', padding: '0 5px', borderRadius: '4px', border: '1px solid #C8C4B8', background: '#F7F6F2', color: '#4A4640', fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', fontFamily: 'inherit' }}
               />
             ) : (
               <button
@@ -374,14 +365,14 @@ export default function Sidebar({
                   if (mode === 'study') onSelectTopic(deck.id, topic.id)
                   toggleTopic(topic.id)
                 }}
-                style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 4px', border: 'none', background: mode === 'study' && selectedStudyTopicId === topic.id ? 'var(--app-accent-soft, #EEF2FF)' : 'transparent', color: mode === 'study' && selectedStudyTopicId === topic.id ? 'var(--app-accent, #4F46E5)' : '#9B9488', cursor: 'grab', fontSize: '10.5px', fontWeight: 600, textAlign: 'left', fontFamily: 'inherit' }}
+                style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 4px', border: 'none', background: mode === 'study' && selectedStudyTopicId === topic.id ? 'var(--app-accent-soft, #EEF2FF)' : 'transparent', color: mode === 'study' && selectedStudyTopicId === topic.id ? 'var(--app-accent, #4F46E5)' : '#9B9488', cursor: 'grab', fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', fontWeight: 600, textAlign: 'left', fontFamily: 'inherit' }}
               >
                 <IconChevron down={!isTopicCollapsed} />
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{topic.name}</span>
                 <span className="topic-count">{topicCards.length}</span>
               </button>
             )}
-            {!immutable && <button type="button" onClick={() => { setEditingTopicId(topic.id); setEditedTopicName(topic.name) }} title="Rename subtopic" aria-label={`Rename ${topic.name}`} style={{ width: '22px', height: '22px', border: 'none', background: 'transparent', color: '#9B9488', cursor: 'pointer', padding: 0, fontSize: '12px' }}>✎</button>}
+            {!immutable && <button type="button" onClick={() => { setEditingTopicId(topic.id); setEditedTopicName(topic.name) }} title="Rename subtopic" aria-label={`Rename ${topic.name}`} style={{ width: '22px', height: '22px', border: 'none', background: 'transparent', color: '#9B9488', cursor: 'pointer', padding: 0, fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))' }}>✎</button>}
           </div>
           {!isTopicCollapsed && topicCards.map((card, index) => renderCard(card, topic.id, topicCards[index + 1]?.id))}
         </div>
@@ -391,15 +382,15 @@ export default function Sidebar({
     return (
       <div key={deck.id} style={{ marginBottom: '2px' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <button title={deck.name} className={`deck-item${isSelected ? ' is-selected' : ''}`} onClick={() => onSelectDeck(deck.id)} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 6px 6px 22px', borderRadius: '6px 0 0 6px', border: 'none', cursor: 'pointer', color: isSelected ? '#111110' : '#4A4640', fontSize: '12.5px', fontWeight: isSelected ? 500 : 400, textAlign: 'left', transition: 'all 0.13s', fontFamily: 'inherit' }} onMouseEnter={event => event.currentTarget.classList.add('is-hovered')} onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}>
+          <button title={deck.name} className={`deck-item${isSelected ? ' is-selected' : ''}`} onClick={() => onSelectDeck(deck.id)} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 6px 6px 22px', borderRadius: '6px 0 0 6px', border: 'none', cursor: 'pointer', color: isSelected ? '#111110' : '#4A4640', fontSize: 'calc(12.5px * var(--app-ui-font-scale, 1.125))', fontWeight: isSelected ? 500 : 400, textAlign: 'left', transition: 'all 0.13s', fontFamily: 'inherit' }} onMouseEnter={event => event.currentTarget.classList.add('is-hovered')} onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}>
             <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: deck.color, flexShrink: 0 }} />
             <span title={deck.name} aria-label={deck.name} style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deck.name}</span>
-            <span className="deck-count" style={{ fontSize: '10.5px', fontWeight: 500, color: isSelected ? '#6B6560' : '#9B9488', background: isSelected ? 'rgba(0,0,0,0.06)' : '#E3E0D7', borderRadius: '10px', padding: '1px 6px', flexShrink: 0 }}>{count}</span>
+            <span className="deck-count" style={{ fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', fontWeight: 500, color: isSelected ? '#6B6560' : '#9B9488', background: isSelected ? 'rgba(0,0,0,0.06)' : '#E3E0D7', borderRadius: '10px', padding: '1px 6px', flexShrink: 0 }}>{count}</span>
           </button>
           <button type="button" onClick={() => toggleDeckQuestions(deck.id)} aria-label={questionsExpanded ? `Collapse questions in ${deck.name}` : `Show questions in ${deck.name}`} title={questionsExpanded ? 'Collapse questions' : 'Show questions'} style={{ width: '26px', height: '28px', border: 'none', borderRadius: '0 6px 6px 0', background: isSelected ? '#D8D4C8' : 'transparent', color: '#6B6560', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
             <IconChevron down={questionsExpanded} />
           </button>
-          {!immutable && <button className="sidebar-delete-deck" type="button" onClick={() => onDeleteDeck(deck.id)} aria-label={`Delete ${deck.name}`} title={`Delete ${deck.name}`} style={{ width: '24px', height: '28px', border: 'none', borderRadius: '5px', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontSize: '13px' }} onMouseEnter={event => event.currentTarget.classList.add('is-hovered')} onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}>
+          {!immutable && <button className="sidebar-delete-deck" type="button" onClick={() => onDeleteDeck(deck.id)} aria-label={`Delete ${deck.name}`} title={`Delete ${deck.name}`} style={{ width: '24px', height: '28px', border: 'none', borderRadius: '5px', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontSize: 'calc(13px * var(--app-ui-font-scale, 1.125))' }} onMouseEnter={event => event.currentTarget.classList.add('is-hovered')} onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}>
             <IconTrash />
           </button>}
         </div>
@@ -408,7 +399,7 @@ export default function Sidebar({
           <div style={{ padding: '4px 0 6px 28px' }}>
             {topicGroups.map(topic => renderTopic(topic, topic.cards))}
             <div onDragOver={event => { event.preventDefault(); if (draggedCardId) setHighlightedTopicId(null) }} onDrop={event => { event.preventDefault(); if (draggedCardId) onMoveCard(draggedCardId, null); resetDragState() }}>
-              <button className="subtopic-item" type="button" onClick={() => { if (mode === 'study') onSelectTopic(deck.id, null); toggleTopic(`${deck.id}:unassigned`) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px', border: 'none', background: mode === 'study' && selectedStudyTopicId === null && selectedDeckId === deck.id ? 'var(--app-accent-soft, #EEF2FF)' : 'transparent', color: mode === 'study' && selectedStudyTopicId === null && selectedDeckId === deck.id ? 'var(--app-accent, #4F46E5)' : '#9B9488', cursor: 'pointer', fontSize: '10.5px', fontWeight: 600, textAlign: 'left', fontFamily: 'inherit' }}>
+              <button className="subtopic-item" type="button" onClick={() => { if (mode === 'study') onSelectTopic(deck.id, null); toggleTopic(`${deck.id}:unassigned`) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px', border: 'none', background: mode === 'study' && selectedStudyTopicId === null && selectedDeckId === deck.id ? 'var(--app-accent-soft, #EEF2FF)' : 'transparent', color: mode === 'study' && selectedStudyTopicId === null && selectedDeckId === deck.id ? 'var(--app-accent, #4F46E5)' : '#9B9488', cursor: 'pointer', fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', fontWeight: 600, textAlign: 'left', fontFamily: 'inherit' }}>
                 <IconChevron down={!collapsedTopics.has(`${deck.id}:unassigned`)} />
                 <span style={{ flex: 1 }}>No subtopic</span>
                 <span className="topic-count">{unassignedCards.length}</span>
@@ -418,11 +409,11 @@ export default function Sidebar({
 
             {!immutable && (creatingTopicForDeckId === deck.id ? (
               <div style={{ display: 'flex', gap: '4px', marginTop: '5px' }}>
-                <input autoFocus value={newTopicName} onChange={event => setNewTopicName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { onCreateTopic(deck.id, newTopicName); setNewTopicName(''); setCreatingTopicForDeckId(null) }; if (event.key === 'Escape') setCreatingTopicForDeckId(null) }} placeholder="Subtopic name" style={{ minWidth: 0, flex: 1, height: '24px', padding: '0 5px', borderRadius: '4px', border: '1px solid #C8C4B8', background: '#F7F6F2', fontSize: '10.5px', fontFamily: 'inherit' }} />
-                <button type="button" onClick={() => { onCreateTopic(deck.id, newTopicName); setNewTopicName(''); setCreatingTopicForDeckId(null) }} style={{ border: 'none', borderRadius: '4px', background: '#E3E0D7', color: '#4A4640', cursor: 'pointer', fontSize: '10.5px' }}>Add</button>
+                <input autoFocus value={newTopicName} onChange={event => setNewTopicName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { onCreateTopic(deck.id, newTopicName); setNewTopicName(''); setCreatingTopicForDeckId(null) }; if (event.key === 'Escape') setCreatingTopicForDeckId(null) }} placeholder="Subtopic name" style={{ minWidth: 0, flex: 1, height: '24px', padding: '0 5px', borderRadius: '4px', border: '1px solid #C8C4B8', background: '#F7F6F2', fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', fontFamily: 'inherit' }} />
+                <button type="button" onClick={() => { onCreateTopic(deck.id, newTopicName); setNewTopicName(''); setCreatingTopicForDeckId(null) }} style={{ border: 'none', borderRadius: '4px', background: '#E3E0D7', color: '#4A4640', cursor: 'pointer', fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))' }}>Add</button>
               </div>
             ) : (
-              <button type="button" onClick={() => { setCreatingTopicForDeckId(deck.id); setNewTopicName('') }} style={{ marginTop: '5px', display: 'flex', alignItems: 'center', gap: '4px', border: 'none', background: 'transparent', color: '#6B6560', cursor: 'pointer', fontSize: '10.5px', fontFamily: 'inherit', padding: '3px 4px' }}><IconPlus /> Add subtopic</button>
+              <button type="button" onClick={() => { setCreatingTopicForDeckId(deck.id); setNewTopicName('') }} style={{ marginTop: '5px', display: 'flex', alignItems: 'center', gap: '4px', border: 'none', background: 'transparent', color: '#6B6560', cursor: 'pointer', fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', fontFamily: 'inherit', padding: '3px 4px' }}><IconPlus /> Add subtopic</button>
             ))}
           </div>
         )}
@@ -478,7 +469,7 @@ export default function Sidebar({
               paddingRight: '8px',
               borderRadius: '6px',
               background: '#F7F6F2',
-              fontSize: '12px',
+              fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))',
               color: '#111110',
               outline: 'none',
               fontFamily: 'inherit',
@@ -507,7 +498,7 @@ export default function Sidebar({
             border: 'none',
             cursor: 'pointer',
             color: selectedDeckId === null ? '#111110' : '#4A4640',
-            fontSize: '12.5px',
+            fontSize: 'calc(12.5px * var(--app-ui-font-scale, 1.125))',
             fontWeight: selectedDeckId === null ? 500 : 400,
             textAlign: 'left',
             transition: 'all 0.13s',
@@ -518,7 +509,7 @@ export default function Sidebar({
           <span style={{ flex: 1 }}>All Decks</span>
           <span
             style={{
-              fontSize: '10.5px',
+              fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))',
               fontWeight: 500,
               color: selectedDeckId === null ? '#6B6560' : '#9B9488',
               background: selectedDeckId === null ? 'rgba(0,0,0,0.06)' : '#E3E0D7',
@@ -536,7 +527,7 @@ export default function Sidebar({
           type="button"
           onClick={collapseAll}
           title="Collapse all categories, decks, and subtopics"
-          style={{ width: '100%', height: '26px', borderRadius: '5px', border: '1px solid #D8D4C8', background: 'transparent', color: '#6B6560', cursor: 'pointer', fontSize: '10.5px', fontFamily: 'inherit', textAlign: 'left', padding: '0 10px' }}
+          style={{ width: '100%', height: '26px', borderRadius: '5px', border: '1px solid #D8D4C8', background: 'transparent', color: '#6B6560', cursor: 'pointer', fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', fontFamily: 'inherit', textAlign: 'left', padding: '0 10px' }}
         >
           Collapse all
         </button>
@@ -547,7 +538,7 @@ export default function Sidebar({
           type="button"
           disabled={decks.length === 0}
           onClick={onDeleteAllDecks}
-          style={{ width: '100%', height: '26px', borderRadius: '5px', border: '1px solid #FCA5A5', background: 'transparent', color: decks.length === 0 ? '#C8C4B8' : '#DC2626', cursor: decks.length === 0 ? 'not-allowed' : 'pointer', fontSize: '10.5px', fontFamily: 'inherit' }}
+          style={{ width: '100%', height: '26px', borderRadius: '5px', border: '1px solid #FCA5A5', background: 'transparent', color: decks.length === 0 ? '#C8C4B8' : '#DC2626', cursor: decks.length === 0 ? 'not-allowed' : 'pointer', fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', fontFamily: 'inherit' }}
         >
           Delete all decks
         </button>
@@ -559,7 +550,7 @@ export default function Sidebar({
           disabled={decks.length === 0}
           onClick={onClearDecksFromView}
           title="Remove all loaded decks from this view. Markdown files are not changed."
-          style={{ width: '100%', height: '26px', borderRadius: '5px', border: '1px solid #C8C4B8', background: 'transparent', color: decks.length === 0 ? '#C8C4B8' : '#6B6560', cursor: decks.length === 0 ? 'not-allowed' : 'pointer', fontSize: '10.5px', fontFamily: 'inherit' }}
+          style={{ width: '100%', height: '26px', borderRadius: '5px', border: '1px solid #C8C4B8', background: 'transparent', color: decks.length === 0 ? '#C8C4B8' : '#6B6560', cursor: decks.length === 0 ? 'not-allowed' : 'pointer', fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', fontFamily: 'inherit' }}
         >
           Clear loaded decks
         </button>
@@ -569,11 +560,11 @@ export default function Sidebar({
         <button
           type="button"
           onClick={() => setTrashOpen(open => !open)}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: trashOpen ? '#E3E0D7' : 'transparent', color: '#4A4640', fontSize: '12.5px', textAlign: 'left', fontFamily: 'inherit' }}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: trashOpen ? '#E3E0D7' : 'transparent', color: '#4A4640', fontSize: 'calc(12.5px * var(--app-ui-font-scale, 1.125))', textAlign: 'left', fontFamily: 'inherit' }}
         >
           <IconTrash />
           <span style={{ flex: 1 }}>Trash</span>
-          <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#9B9488', background: '#E3E0D7', borderRadius: '10px', padding: '1px 6px' }}>{trash.length}</span>
+          <span style={{ fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', fontWeight: 500, color: '#9B9488', background: '#E3E0D7', borderRadius: '10px', padding: '1px 6px' }}>{trash.length}</span>
           <IconChevron down={trashOpen} />
         </button>
         {trashOpen && (
@@ -587,17 +578,17 @@ export default function Sidebar({
                 title="Restore to its original position"
                 onMouseEnter={event => event.currentTarget.classList.add('is-hovered')}
                 onMouseLeave={event => event.currentTarget.classList.remove('is-hovered')}
-                style={{ width: '100%', border: 'none', color: '#6B6560', cursor: 'pointer', padding: '4px 5px', textAlign: 'left', fontFamily: 'inherit', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                style={{ width: '100%', border: 'none', color: '#6B6560', cursor: 'pointer', padding: '4px 5px', textAlign: 'left', fontFamily: 'inherit', fontSize: 'calc(11px * var(--app-ui-font-scale, 1.125))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
               >
-                ↩ {card.question}
+                ↩ {cardReferenceName(card)}
               </button>
             ))}
-            {trash.length === 0 && <p style={{ margin: '4px 0', color: '#9B9488', fontSize: '11px' }}>Trash is empty</p>}
+            {trash.length === 0 && <p style={{ margin: '4px 0', color: '#9B9488', fontSize: 'calc(11px * var(--app-ui-font-scale, 1.125))' }}>Trash is empty</p>}
             <button
               type="button"
               disabled={trash.length === 0}
               onClick={onEmptyTrash}
-              style={{ marginTop: '5px', width: '100%', height: '25px', borderRadius: '5px', border: '1px solid #FCA5A5', background: 'transparent', color: trash.length === 0 ? '#C8C4B8' : '#DC2626', cursor: trash.length === 0 ? 'not-allowed' : 'pointer', fontSize: '10.5px', fontFamily: 'inherit' }}
+              style={{ marginTop: '5px', width: '100%', height: '25px', borderRadius: '5px', border: '1px solid #FCA5A5', background: 'transparent', color: trash.length === 0 ? '#C8C4B8' : '#DC2626', cursor: trash.length === 0 ? 'not-allowed' : 'pointer', fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))', fontFamily: 'inherit' }}
             >
               Empty trash
             </button>
@@ -635,7 +626,7 @@ export default function Sidebar({
                   borderRadius: '5px',
                   border: 'none',
                   background: 'transparent',
-                  fontSize: '10.5px',
+                  fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))',
                   fontWeight: 600,
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
@@ -652,7 +643,7 @@ export default function Sidebar({
                 <div style={{ marginTop: '2px', marginBottom: '4px' }}>
                   {catDecks.map(deckItem)}
                   {catDecks.length === 0 && (
-                    <p style={{ fontSize: '11.5px', color: '#9B9488', padding: '4px 22px' }}>No decks</p>
+                    <p style={{ fontSize: 'calc(11.5px * var(--app-ui-font-scale, 1.125))', color: '#9B9488', padding: '4px 22px' }}>No decks</p>
                   )}
                 </div>
               )}
@@ -675,7 +666,7 @@ export default function Sidebar({
                 border: 'none',
                 borderRadius: '5px',
                 background: 'transparent',
-                fontSize: '10.5px',
+                fontSize: 'calc(10.5px * var(--app-ui-font-scale, 1.125))',
                 fontWeight: 600,
                 letterSpacing: '0.06em',
                 textTransform: 'uppercase',
@@ -708,7 +699,7 @@ export default function Sidebar({
             gap: '6px',
             padding: '7px',
             borderRadius: '6px',
-            fontSize: '12px',
+            fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))',
             fontWeight: 500,
             cursor: 'pointer',
             transition: 'all 0.15s',

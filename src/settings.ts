@@ -17,6 +17,7 @@ export class FlashcardGeniusSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this
     containerEl.empty()
+    containerEl.addClass('flashcard-genius-settings')
 
     const folders = this.app.vault.getAllLoadedFiles()
       .filter((file): file is TFolder => file instanceof TFolder)

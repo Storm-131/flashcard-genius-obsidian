@@ -69,7 +69,7 @@ function IconBook() {
 
 function IconBrain() {
   return (
-    <span aria-hidden="true" style={{ fontSize: "14px", lineHeight: 1 }}>
+    <span aria-hidden="true" style={{ fontSize: 'calc(14px * var(--app-ui-font-scale, 1.125))', lineHeight: 1 }}>
       🧠
     </span>
   );
@@ -259,7 +259,7 @@ export default function TopBar({
               gap: "5px",
               padding: "4px 10px",
               borderRadius: "5px",
-              fontSize: "12px",
+              fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))',
               fontWeight: 500,
               cursor: "pointer",
               transition: "all 0.15s",
@@ -288,7 +288,7 @@ export default function TopBar({
             gap: "5px",
             padding: "4px 10px",
             borderRadius: "6px",
-            fontSize: "12px",
+            fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))',
             fontWeight: 500,
             color: "#6B6560",
             cursor: "pointer",
@@ -335,7 +335,7 @@ export default function TopBar({
             paddingRight: "10px",
             borderRadius: "7px",
             background: "#F7F6F2",
-            fontSize: "12px",
+            fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))',
             color: "#111110",
             outline: "none",
             transition: "border-color 0.15s",
@@ -388,7 +388,7 @@ export default function TopBar({
             gap: "5px",
             padding: "4px 10px",
             borderRadius: "6px",
-            fontSize: "12px",
+            fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))',
             fontWeight: 500,
             color: "#6B6560",
             cursor: "pointer",
@@ -485,7 +485,7 @@ export default function TopBar({
     color: "#6B6560",
     cursor: "pointer",
     fontFamily: "inherit",
-    fontSize: "12px",
+    fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))',
   };
 
   const menuSearchControl = secondaryMenuLevel >= 1 && (
@@ -498,7 +498,7 @@ export default function TopBar({
         placeholder="Search cards…"
         value={searchQuery}
         onChange={(event) => onSearchChange(event.target.value)}
-        style={{ width: "100%", height: "32px", boxSizing: "border-box", paddingLeft: "30px", paddingRight: "10px", borderRadius: "7px", border: "1px solid #E2DED4", background: "#F7F6F2", fontSize: "12px", color: "#111110", outline: "none", fontFamily: "inherit" }}
+        style={{ width: "100%", height: "32px", boxSizing: "border-box", paddingLeft: "30px", paddingRight: "10px", borderRadius: "7px", border: "1px solid #E2DED4", background: "#F7F6F2", fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))', color: "#111110", outline: "none", fontFamily: "inherit" }}
       />
     </div>
   );
@@ -587,7 +587,7 @@ export default function TopBar({
             gap: "5px",
             padding: "4px 10px",
             color: "#6B6560",
-            fontSize: "12px",
+            fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))',
             fontWeight: 500,
             cursor: "pointer",
             transition: "all 0.15s",
@@ -620,7 +620,7 @@ export default function TopBar({
             <rect x="8" y="8" width="5" height="5" rx="1" fill="white" />
           </svg>
         </div>
-        <span style={{ fontSize: "14px", fontWeight: 600, color: "#111110", letterSpacing: "-0.01em" }}>
+        <span style={{ fontSize: 'calc(14px * var(--app-ui-font-scale, 1.125))', fontWeight: 600, color: "#111110", letterSpacing: "-0.01em" }}>
           Flashcard Genius
         </span>
       </div>
@@ -646,7 +646,7 @@ export default function TopBar({
               color: "#6B6560",
               cursor: "pointer",
               fontFamily: "inherit",
-              fontSize: "12px",
+              fontSize: 'calc(12px * var(--app-ui-font-scale, 1.125))',
             }}
           >
             <IconMenu />

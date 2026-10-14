@@ -80,7 +80,7 @@ function ActionButton({ children, onClick, disabled = false }: {
         color: disabled ? '#B8B4A8' : '#4A4640',
         cursor: disabled ? 'not-allowed' : 'pointer',
         fontFamily: 'inherit',
-        fontSize: '11px',
+        fontSize: 'calc(11px * var(--app-ui-font-scale, 1.125))',
         lineHeight: 1.25,
         fontWeight: 600,
       }}
@@ -143,14 +143,14 @@ export default function ImportExportPanel(props: ImportExportPanelProps) {
         onDragLeave={() => setDropActive(false)}
         onDrop={event => { void handleDrop(event) }}
         aria-label="Choose a folder or drop files and folders"
-        style={{ marginTop: '7px', padding: '8px', borderRadius: '5px', border: `1px dashed ${dropActive ? 'var(--app-accent, #4F46E5)' : '#B8B4A8'}`, background: dropActive ? 'var(--app-accent-soft, #EEF2FF)' : '#F0EDE6', color: '#6B6560', fontSize: '10px', lineHeight: 1.35, textAlign: 'center', cursor: props.busy ? 'not-allowed' : 'pointer', transition: 'all 0.15s' }}
+        style={{ marginTop: '7px', padding: '8px', borderRadius: '5px', border: `1px dashed ${dropActive ? 'var(--app-accent, #4F46E5)' : '#B8B4A8'}`, background: dropActive ? 'var(--app-accent-soft, #EEF2FF)' : '#F0EDE6', color: '#6B6560', fontSize: 'calc(10px * var(--app-ui-font-scale, 1.125))', lineHeight: 1.35, textAlign: 'center', cursor: props.busy ? 'not-allowed' : 'pointer', transition: 'all 0.15s' }}
       >
         Drop Markdown files, image folders, or nested folders here. Click to choose a folder.
       </div>
 
       <input ref={fileInputRef} type="file" accept=".md,text/markdown,text/plain,image/*" multiple onChange={handleFiles} style={{ display: 'none' }} aria-label="Choose files" />
       <input ref={folderInputRef} type="file" multiple onChange={handleFolderFiles} style={{ display: 'none' }} aria-label="Choose folder" {...({ webkitdirectory: '', directory: '' } as InputHTMLAttributes<HTMLInputElement>)} />
-      {props.message && <p role="status" style={{ margin: '7px 2px 0', color: '#6B6560', fontSize: '10px', lineHeight: 1.35 }}>{props.message}</p>}
+      {props.message && <p role="status" style={{ margin: '7px 2px 0', color: '#6B6560', fontSize: 'calc(10px * var(--app-ui-font-scale, 1.125))', lineHeight: 1.35 }}>{props.message}</p>}
     </section>
   )
 }

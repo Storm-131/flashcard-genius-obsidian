@@ -1,4 +1,9 @@
 import type { App, Component } from 'obsidian'
+import { createContext, type ReactNode } from 'react'
+
+// The browser preview can supply its math renderer without bundling it in Obsidian.
+export type FallbackMathRenderer = (expression: string) => ReactNode
+export const FallbackMathContext = createContext<FallbackMathRenderer | null>(null)
 
 export type MarkdownRenderFunction = (
   app: App,

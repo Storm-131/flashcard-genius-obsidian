@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import MarkdownImage from './MarkdownImage'
+import { extractMarkdownImages, stripMarkdownImages } from '../images/markdownImages'
 import ImageOverlay from './ImageOverlay'
-import { stripMarkdownImages } from '../images/markdownImages'
-import type { MarkdownRenderContext } from '../markdownRenderer'
+import { FallbackMathContext, type FallbackMathRenderer, type MarkdownRenderContext } from '../markdownRenderer'
 
 interface Props {
   content: string
@@ -13,45 +13,68 @@ interface Props {
   sourcePath?: string
 }
 
-const inlinePattern = /(!\[[^\]]*\]\([^)\n]+\)|\*\*[^*]+\*\*|__[^_]+__|\+\+[^+]+\+\+|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]*\))/g
+const inlinePattern = /(!\[\[[^\]\n]+\]\]|!\[[^\]]*\]\([^)\n]+\)|\*\*[^*]+\*\*|__[^_]+__|\+\+[^+]+\+\+|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]+\)|\\\([\s\S]*?\\\)|\$[^$\n]+\$)/g
 
-function stripRemoteImages(markdown: string): string {
-  return markdown.replace(/!\[([^\]]*)\]\(([^)\n]+)\)/g, (raw, alt: string, path: string) => (
-    /^https?:\/\//i.test(path.trim()) ? alt : raw
-  ))
+function renderInlineMath(part: string, index: number, renderMath: FallbackMathRenderer | null): ReactNode | null {
+  const expression = part.startsWith('\\(') && part.endsWith('\\)')
+    ? part.slice(2, -2)
+    : part.startsWith('$') && part.endsWith('$')
+      ? part.slice(1, -1)
+      : null
+
+  if (expression === null || !renderMath) return null
+
+  return <span key={index} className="inline-math">{renderMath(expression)}</span>
 }
 
-function renderInline(text: string, allowImages: boolean): ReactNode[] {
+function renderInline(text: string, allowImages: boolean, renderMath: FallbackMathRenderer | null): ReactNode[] {
   return text.split(inlinePattern).filter(Boolean).map((part, index) => {
+    const math = renderInlineMath(part, index, renderMath)
+    if (math) return math
     if (part.startsWith('![')) {
-      const match = part.match(/^!\[([^\]]*)\]\([^)\n]+\)$/)
-      if (!match || !allowImages) return part
-      const path = part.slice(match[0].indexOf('](') + 2, -1)
-      return <MarkdownImage key={index} alt={match[1].trim()} path={path.trim()} />
+      const image = extractMarkdownImages(part)[0]
+      if (!image || !allowImages) return part
+      return <MarkdownImage key={index} alt={image.alt} path={image.path} />
     }
-    if (part.startsWith('**') && part.endsWith('**')) return <strong key={index}>{renderInline(part.slice(2, -2), allowImages)}</strong>
-    if (part.startsWith('__') && part.endsWith('__')) return <strong key={index}>{renderInline(part.slice(2, -2), allowImages)}</strong>
-    if (part.startsWith('++') && part.endsWith('++')) return <u key={index}>{renderInline(part.slice(2, -2), allowImages)}</u>
-    if (part.startsWith('*') && part.endsWith('*')) return <em key={index}>{renderInline(part.slice(1, -1), allowImages)}</em>
-    if (part.startsWith('_') && part.endsWith('_')) return <em key={index}>{renderInline(part.slice(1, -1), allowImages)}</em>
+    if (part.startsWith('**') && part.endsWith('**')) return <strong key={index}>{renderInline(part.slice(2, -2), allowImages, renderMath)}</strong>
+    if (part.startsWith('__') && part.endsWith('__')) return <strong key={index}>{renderInline(part.slice(2, -2), allowImages, renderMath)}</strong>
+    if (part.startsWith('++') && part.endsWith('++')) return <u key={index}>{renderInline(part.slice(2, -2), allowImages, renderMath)}</u>
+    if (part.startsWith('*') && part.endsWith('*')) return <em key={index}>{renderInline(part.slice(1, -1), allowImages, renderMath)}</em>
+    if (part.startsWith('_') && part.endsWith('_')) return <em key={index}>{renderInline(part.slice(1, -1), allowImages, renderMath)}</em>
     if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={index} style={{ fontFamily: 'var(--font-monospace)', fontSize: '0.9em' }}>{part.slice(1, -1)}</code>
+      return <code key={index} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.9em' }}>{part.slice(1, -1)}</code>
     }
     if (part.startsWith('[')) {
-      const match = part.match(/^\[([^\]]+)\]\([^)]*\)$/)
-      if (match) return renderInline(match[1], allowImages)
+      const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+      if (match) {
+        const [, label, href] = match
+        const safeHref = /^(https?:|mailto:|\/)/i.test(href) ? href : undefined
+        return safeHref ? (
+          <a key={index} href={safeHref} target="_blank" rel="noreferrer" onClick={event => event.stopPropagation()}>
+            {renderInline(label, allowImages, renderMath)}
+          </a>
+        ) : label
+      }
     }
     return part
   })
 }
 
-function renderFallback(content: string, allowImages: boolean): ReactNode[] {
+function renderFallback(content: string, allowImages: boolean, renderMath: FallbackMathRenderer | null) {
   const lines = content.split('\n')
   const blocks: ReactNode[] = []
   let index = 0
 
   while (index < lines.length) {
     const line = lines[index]
+    if (!line.trim()) {
+      const gapStart = index
+      while (index < lines.length && !lines[index].trim()) index += 1
+      if (blocks.length > 0 && index < lines.length) {
+        blocks.push(<div key={`gap-${gapStart}`} className="markdown-paragraph-gap" aria-hidden="true" style={{ height: '0.75em', flexShrink: 0 }} />)
+      }
+      continue
+    }
     const unordered = line.match(/^[-*+]\s+(.+)/)
     const ordered = line.match(/^\d+\.\s+(.+)/)
 
@@ -61,7 +84,7 @@ function renderFallback(content: string, allowImages: boolean): ReactNode[] {
       while (index < lines.length) {
         const item = lines[index].match(isOrdered ? /^\d+\.\s+(.+)/ : /^[-*+]\s+(.+)/)
         if (!item) break
-        items.push(<li key={index}>{renderInline(item[1], allowImages)}</li>)
+        items.push(<li key={index}>{renderInline(item[1], allowImages, renderMath)}</li>)
         index += 1
       }
       const List = isOrdered ? 'ol' : 'ul'
@@ -76,16 +99,37 @@ function renderFallback(content: string, allowImages: boolean): ReactNode[] {
           }}
         >
           {items}
-        </List>,
+        </List>
       )
       continue
     }
 
-    if (line.trim()) blocks.push(<p key={index} style={{ margin: '0 0 8px' }}>{renderInline(line, allowImages)}</p>)
+    if (line.trim()) {
+      blocks.push(<p key={index} style={{ margin: '0 0 8px' }}>{renderInline(line, allowImages, renderMath)}</p>)
+    }
     index += 1
   }
 
   return blocks
+}
+
+function stripRemoteImages(markdown: string): string {
+  const images = extractMarkdownImages(markdown)
+  for (const image of images.reverse()) {
+    if (!/^https?:/i.test(image.path)) continue
+    markdown = `${markdown.slice(0, image.start)}${image.alt}${markdown.slice(image.end)}`
+  }
+  return markdown
+}
+
+function prepareNativeMarkdown(markdown: string): string {
+  // Obsidian wiki embeds expect vault paths, not resolved resource URLs.
+  for (const image of extractMarkdownImages(markdown).reverse()) {
+    if (!image.raw.startsWith('![[') || !/^(app:|capacitor:|blob:|data:)/i.test(image.path)) continue
+    const alt = image.alt.replace(/[\[\]]/g, '')
+    markdown = `${markdown.slice(0, image.start)}![${alt}](${image.path})${markdown.slice(image.end)}`
+  }
+  return stripRemoteImages(markdown)
 }
 
 function addImageZoomControls(element: HTMLElement, onOpen: (src: string, alt: string) => void): () => void {
@@ -96,23 +140,27 @@ function addImageZoomControls(element: HTMLElement, onOpen: (src: string, alt: s
     const parent = image.parentNode
     if (!parent) continue
 
-    const wrapper = createSpan({ cls: 'markdown-image' })
+    const wrapper = document.createElement('span')
+    wrapper.className = 'markdown-image'
+    image.removeAttribute('width')
+    image.removeAttribute('height')
+    for (const property of ['width', 'height', 'max-width', 'max-height']) image.style.removeProperty(property)
+    const embed = image.closest('.internal-embed.image-embed') as HTMLElement | null
+    if (embed) {
+      embed.removeAttribute('width')
+      embed.removeAttribute('height')
+      for (const property of ['width', 'height', 'max-width', 'max-height']) embed.style.removeProperty(property)
+    }
     parent.insertBefore(wrapper, image)
     wrapper.appendChild(image)
 
-    const button = createEl('button', { cls: 'markdown-image-zoom', type: 'button' })
+    const button = document.createElement('button')
+    button.className = 'markdown-image-zoom'
+    button.type = 'button'
     const alt = image.alt || 'Flashcard image'
     button.setAttribute('aria-label', `Enlarge image: ${alt}`)
     button.title = 'Enlarge image'
-    const icon = button.createSvg('svg', {
-      attr: { width: 11, height: 11, viewBox: '0 0 11 11', fill: 'none', 'aria-hidden': 'true' },
-    })
-    icon.createSvg('circle', {
-      attr: { cx: 4.7, cy: 4.7, r: 3, stroke: 'currentColor', 'stroke-width': 1.1 },
-    })
-    icon.createSvg('path', {
-      attr: { d: 'M7 7l2.4 2.4', stroke: 'currentColor', 'stroke-width': 1.1, 'stroke-linecap': 'round' },
-    })
+    button.textContent = '⤢'
     const openOverlay = (event: MouseEvent) => {
       event.preventDefault()
       event.stopPropagation()
@@ -128,6 +176,7 @@ function addImageZoomControls(element: HTMLElement, onOpen: (src: string, alt: s
 }
 
 export default function MarkdownContent({ content, style, className, allowImages = true, markdownContext, sourcePath = '' }: Props) {
+  const renderMath = useContext(FallbackMathContext)
   const markdownElementRef = useRef<HTMLDivElement>(null)
   const [overlayImage, setOverlayImage] = useState<{ src: string; alt: string } | null>(null)
 
@@ -140,7 +189,7 @@ export default function MarkdownContent({ content, style, className, allowImages
     const renderComponent = markdownContext.createComponent?.() ?? markdownContext.component
     if (renderComponent !== markdownContext.component) markdownContext.component.addChild(renderComponent)
     element.replaceChildren()
-    const markdown = allowImages ? stripRemoteImages(content) : stripMarkdownImages(content)
+    const markdown = allowImages ? prepareNativeMarkdown(content) : stripMarkdownImages(content)
     void Promise.resolve().then(() => {
       if (disposed) return
       return markdownContext.render(markdownContext.app, markdown, element, sourcePath, renderComponent)
@@ -167,5 +216,5 @@ export default function MarkdownContent({ content, style, className, allowImages
     )
   }
 
-  return <div className={`markdown-content${className ? ` ${className}` : ''}`} style={style}>{renderFallback(content, allowImages)}</div>
+  return <div className={`markdown-content${className ? ` ${className}` : ''}`} style={style}>{renderFallback(content, allowImages, renderMath)}</div>
 }

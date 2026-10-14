@@ -1,7 +1,10 @@
+import type { CardAnswerPart } from "./importExportTypes"
+
 export interface Card {
   id: string
   question: string
   answer: string
+  answerParts?: CardAnswerPart[]
   imageAsQuestion?: boolean
   tags: string[]
   topicId?: string
@@ -28,8 +31,8 @@ export interface DeckTopic {
   name: string
 }
 
-export type AppMode = 'edit' | 'study' | 'stats'
+export type AppMode = "edit" | "study" | "stats"
 
-export type ColorScheme = 'neutral' | 'indigo' | 'sky' | 'emerald' | 'amber' | 'rose'
+export type ColorScheme = "neutral" | "indigo" | "sky" | "emerald" | "amber" | "rose"
 
-export type SortOrder = 'default' | 'alphabetical' | 'difficulty-asc' | 'difficulty-desc' | 'newest'
+export type SortOrder = "default" | "alphabetical" | "difficulty-asc" | "difficulty-desc" | "newest"
