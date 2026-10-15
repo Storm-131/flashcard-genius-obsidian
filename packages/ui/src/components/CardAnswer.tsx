@@ -21,7 +21,7 @@ export function trailingNameLines(content: string): string[] | null {
   const emphasis = content.match(/^(\*\*|__|\*|_)([^\n]+)\1$/)
   const marker = emphasis?.[1] ?? ""
   const text = emphasis?.[2] ?? content
-  if (/[\n\r\[\]<>`$\\*_]/.test(text)) return null
+  if (/[\n\r[\]<>`$\\*_]/.test(text)) return null
   const end = text.trimEnd().length
   if (text[end - 1] !== ")") return null
   let depth = 0

@@ -65,7 +65,9 @@ export function uniqueDeckFileNames(documents: DeckDocument[]): string[] {
   return documents.map(document => {
     const sourceFileName = document.sourceFileName?.split(/[\\/]/).pop()?.trim()
     const requested = sourceFileName?.toLowerCase().endsWith('.md')
-      ? sourceFileName.replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-').replace(/^\.+$/, 'deck.md')
+      ? Array.from(sourceFileName, character =>
+        character.charCodeAt(0) < 32 || /[<>:"/\\|?*]/.test(character) ? '-' : character,
+      ).join('').replace(/^\.+$/, 'deck.md')
       : sanitizeFileName(document.title, '.md')
     const dotIndex = requested.toLowerCase().endsWith('.md') ? requested.length - 3 : requested.length
     const stem = requested.slice(0, dotIndex)

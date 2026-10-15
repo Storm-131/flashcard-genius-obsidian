@@ -2,6 +2,7 @@
   --app-ui-font-scale: 1.125;
   --card-text-base-scale: 1.125;
   --card-image-max-height: 75cqh;
+
   /* Only image answers follow card dimensions. Clamp their shared base before
      multiplying columns, so the 2 : 1.5 : 1 hierarchy remains intact. */
   --card-image-answer-base: clamp(10px, calc(5px + 3cqi + 2cqh), 28px);
@@ -11,6 +12,7 @@
   --card-answer-other-scale: 1;
   --card-answer-part-gap: 0.4;
   --card-answer-fit-min: 12; /* Pixels, multiplied by the card font control. */
+
   background-color: #F7F6F2;
   color: #111110;
   font-family: var(--font-interface);
@@ -20,12 +22,13 @@
 
 .flashcard-genius-root .card-answer-group {
   --answer-base: var(--card-text-answer-base);
+
   display: flex;
   flex-direction: column;
   align-items: stretch;
   min-width: 0;
   width: 100%;
-  color: #FFFFFF;
+  color: #FFF;
   line-height: 1.45;
 }
 
@@ -48,6 +51,7 @@
 
 .flashcard-genius-root .image-question-answer {
   --answer-base: var(--card-image-answer-base);
+
   width: 92%;
   line-height: 1.2;
 }
@@ -63,6 +67,7 @@
 
 .flashcard-genius-root .workspace-card {
   --card-text-answer-base: 12px;
+
   /* Match the compact five-column library, then scale with the smaller axis. */
   --card-image-answer-base: clamp(6px, 2cqmin, 16px);
 }
@@ -107,8 +112,7 @@
   container-type: size;
   min-width: 0;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
 }
 
 .flashcard-genius-root :is(.workspace-card, .flip-card-face) {
@@ -210,21 +214,21 @@
 
 /* Study-only image backs: one scroll owner, with notes outside the centered
    names. No workspace/Library or ordinary text-card rules are overridden. */
-.flashcard-genius-root .flip-card-back .image-question-back:has(> .study-image-answer) {
+.flashcard-genius-root .flip-card-back .study-image-question-back {
   position: relative;
   overflow: hidden !important;
 }
 
-.flashcard-genius-root .flip-card-back .image-question-back:has(> .study-image-answer[data-more-below="true"])::after {
+.flashcard-genius-root .flip-card-back .study-image-question-back.has-more-answer-content::after {
   content: "⌄";
   position: absolute;
   bottom: 4px;
   left: 50%;
   transform: translateX(-50%);
-  color: #FFFFFF;
+  color: #FFF;
   font-size: 18px;
   line-height: 1;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
   pointer-events: none;
 }
 
@@ -233,13 +237,13 @@
   min-height: 0;
   max-height: 100%;
   display: block;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
   scrollbar-width: thin;
   scrollbar-gutter: stable both-edges;
   overscroll-behavior: contain;
   text-align: center;
   text-align-last: center;
+
   --study-primary-font: calc(var(--answer-base) * 2 * var(--card-font-scale, 1) * var(--card-text-base-scale));
 }
 
@@ -284,12 +288,22 @@
 }
 
 .flashcard-genius-root .study-image-answer:focus-visible {
-  outline: 1px solid currentColor;
+  outline: 1px solid currentcolor;
   outline-offset: -1px;
 }
 
-@scope (.flashcard-genius-root) {
+/* Temporary measurement must also override native Markdown inline sizes. */
+.flashcard-genius-root .card-answer-measure {
+  width: max-content !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+}
 
+.flashcard-genius-root .card-editor-input {
+  height: var(--card-editor-height, auto);
+}
+
+@scope (.flashcard-genius-root) {
 .markdown-content {
   font-family: var(--font-text);
 }
@@ -341,18 +355,21 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid rgba(255,255,255,0.8);
+  border: 1px solid rgb(255 255 255 / 80%);
   border-radius: 5px;
-  background: rgba(17,17,16,0.62);
-  color: #FFFFFF;
+  background: rgb(17 17 16 / 62%);
+  color: #FFF;
   cursor: pointer;
   font-size: calc(12px * var(--app-ui-font-scale, 1.125));
   opacity: 0.9;
 }
 
-.markdown-image-zoom:hover { background: rgba(17,17,16,0.86); }
+.markdown-image-zoom:hover { background: rgb(17 17 16 / 86%); }
 
-.image-question-preview img { transform: scaleX(-1); opacity: 0.35; }
+.image-question-preview img {
+  transform: scaleX(-1);
+  opacity: 0.35;
+}
 
 .image-question-back {
   display: grid !important;
@@ -378,14 +395,14 @@
   margin-inline: auto;
   text-align: justify;
   text-align-last: center;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
 }
 
 /* Keep the image control clickable when a long answer overlaps the image. */
 .image-question-back .markdown-image-zoom { z-index: 2; }
 
 .theme-dark .flip-card-back .image-question-name,
-.theme-dark .flip-card-back .image-question-name * { color: #FFFFFF !important; }
+.theme-dark .flip-card-back .image-question-name * { color: #FFF !important; }
 
 .study-answer-divider {
   flex: 0 0 2px;
@@ -415,9 +432,28 @@
 
 .stats-markdown p { margin-bottom: 4px !important; }
 .stats-markdown p:last-child { margin-bottom: 0 !important; }
-.stats-markdown .markdown-image { display: inline-block; width: 64px; margin: 2px 0; vertical-align: middle; }
-.stats-markdown .markdown-image > img { width: 64px; max-height: 48px; object-fit: contain; border-radius: 4px; }
-.stats-markdown .markdown-image-zoom { right: 2px; bottom: 2px; width: 16px; height: 16px; border-radius: 3px; }
+
+.stats-markdown .markdown-image {
+  display: inline-block;
+  width: 64px;
+  margin: 2px 0;
+  vertical-align: middle;
+}
+
+.stats-markdown .markdown-image > img {
+  width: 64px;
+  max-height: 48px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.stats-markdown .markdown-image-zoom {
+  right: 2px;
+  bottom: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
 
 :scope .panel-toolbar > button,
 :scope .panel-toolbar > div > button {
@@ -486,7 +522,7 @@
   justify-content: center;
   padding: 28px;
   box-sizing: border-box;
-  background: rgba(17, 17, 16, 0.86);
+  background: rgb(17 17 16 / 86%);
 }
 
 .image-overlay-content {
@@ -503,7 +539,7 @@
   height: auto;
   border-radius: 9px;
   cursor: pointer;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 45%);
 }
 
 /* Scrollbar styles */
@@ -800,7 +836,7 @@
 
 .theme-dark .workspace-card,
 .theme-dark .flip-card-face {
-  background: #FFFFFF !important;
+  background: #FFF !important;
   border-color: #D8D4C8 !important;
   color: #111110 !important;
 }
@@ -813,7 +849,7 @@
 .theme-dark .workspace-topic-header {
   background: #34343a !important;
   border-color: #55555b !important;
-  color: #FFFFFF !important;
+  color: #FFF !important;
 }
 
 .theme-dark .sidebar .deck-item.is-selected,
@@ -847,11 +883,11 @@
 }
 
 .theme-dark .mode-button {
-  background: rgba(255, 255, 255, 0.72) !important;
+  background: rgb(255 255 255 / 72%) !important;
 }
 
 .theme-dark .import-export-action {
-  background: #FFFFFF !important;
+  background: #FFF !important;
 }
 
 .theme-indigo .workspace-main,
@@ -904,7 +940,7 @@
 .theme-dark .difficulty-stars button[aria-pressed='true'][aria-label$='5 out of 5'] { color: #DC2626 !important; }
 
 .theme-dark .difficulty-stars button[aria-pressed='false'] {
-  color: rgba(255, 255, 255, 0.42) !important;
+  color: rgb(255 255 255 / 42%) !important;
 }
 
 .theme-dark.theme-indigo .app-topbar,
@@ -1008,8 +1044,7 @@
   padding: 0 !important;
 }
 
-@media (max-width: 1024px) {
-
+@media (width <= 1024px) {
   .workspace-card .card-action-control:not(.difficulty-stars),
   .flip-card .card-action-control:not(.difficulty-stars) {
     display: none !important;
@@ -1158,12 +1193,12 @@ body.flashcard-genius-resizing-sidebar {
 
 .flashcard-genius-root .workspace-card:not(.is-selected) {
   border: 1px solid #E2DED4;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 4%);
 }
 
 .flashcard-genius-root .workspace-card:not(.is-selected).is-hovered {
   border-color: #C8C4B8;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.09);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 9%);
 }
 
 .flashcard-genius-root .workspace-card-delete {
@@ -1192,7 +1227,7 @@ body.flashcard-genius-resizing-sidebar {
 
 .flashcard-genius-root .workspace-add-card-tile.is-hovered {
   border-color: #9B9488;
-  background: #FFFFFF;
+  background: #FFF;
   color: #6B6560;
 }
 

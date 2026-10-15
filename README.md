@@ -175,11 +175,11 @@ npm run release:verify
 npm run dev:preview
 ```
 
-Version **1.0.2 is already prepared**. Do not run `release:prepare -- patch` for this release: that would prepare 1.0.3. For subsequent versions, `npm run release:prepare -- patch` updates the manifest, compatibility history, workspace versions and lockfile locally without Git operations.
+Patch version **1.0.3 is prepared locally** for the Obsidian review fixes. Do not run `release:prepare -- patch` again for this patch: that would prepare 1.0.4. For subsequent versions, `npm run release:prepare -- patch` updates the manifest, compatibility history, workspace versions and lockfile locally without Git operations.
 
 The tag-triggered GitHub Actions workflow validates the exact version and repository, runs all tests and production builds, then publishes the three plugin assets. It refuses to replace an existing release. Tags use the exact version without a `v` prefix.
 
-See [the migration and release guide](docs/migration-1.0.2.md) for local Obsidian testing, validation results and the manual publication steps after approval.
+See [the 1.0.3 review notes](docs/review-1.0.3.md) for the fixes and remaining lint warnings, and [the migration and release guide](docs/migration-1.0.2.md) for local Obsidian testing, validation results and the manual publication steps after approval.
 
 - - -
 

@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 
+/* stylelint-disable-next-line at-rule-no-unknown -- Tailwind v4 compile-time directive; not emitted in plugin CSS. */
 @theme {
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;

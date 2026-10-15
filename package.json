@@ -1,7 +1,7 @@
 {
   "name": "flashcard-genius-obsidian",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Standalone source repository for the Flashcard Genius Obsidian community plugin.",
   "type": "module",
   "workspaces": [
@@ -26,12 +26,12 @@
     "node": ">=24.0.0"
   },
   "dependencies": {
-    "@flashcard-genius/core": "1.0.2",
-    "@flashcard-genius/ui": "1.0.2",
+    "@flashcard-genius/core": "1.0.3",
+    "@flashcard-genius/ui": "1.0.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "jszip": "^3.10.1",
-    "katex": "^0.18.1"
+    "katex": "^0.18.10"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.0",

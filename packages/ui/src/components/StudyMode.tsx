@@ -286,7 +286,7 @@ export function StudyCard({
           )}
           <div
             className={`card-content-viewport${
-              isImageQuestion ? " image-question-back" : ""
+              isImageQuestion ? " image-question-back study-image-question-back" : ""
             }`}
             style={{
               flex: 1,

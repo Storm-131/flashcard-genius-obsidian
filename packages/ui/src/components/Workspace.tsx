@@ -1,3 +1,4 @@
+import { setCssProps } from "../domStyles"
 import {
   Fragment,
   useEffect,
@@ -222,8 +223,8 @@ function CardItem({
 
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return
-    textarea.style.height = "0px"
-    textarea.style.height = `${textarea.scrollHeight}px`
+    setCssProps(textarea, { "--card-editor-height": "0px" })
+    setCssProps(textarea, { "--card-editor-height": `${textarea.scrollHeight}px` })
   }
 
   useEffect(() => {
@@ -251,6 +252,7 @@ function CardItem({
 
   const questionContent = isSelected ? (
     <textarea
+      className="card-editor-input"
       ref={questionRef}
       value={question}
       rows={1}
@@ -397,6 +399,7 @@ function CardItem({
         {isSelected ? (
           <>
             <textarea
+              className="card-editor-input"
               ref={answerRef}
               value={answer}
               rows={1}

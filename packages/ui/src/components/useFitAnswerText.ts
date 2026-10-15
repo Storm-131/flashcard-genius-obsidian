@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from "react"
+import { setCssProps } from "../domStyles"
 
 // Study names wrap only between words. Fit the primary first, then derive
 // the secondary font from its actual size before fitting the secondary itself.
@@ -16,7 +17,9 @@ export function useFitStudyAnswerText(content: string, enabled: boolean, fontSca
     let frame = 0
     let disposed = false
     const updateScrollHint = () => {
-      element.dataset.moreBelow = String(element.scrollHeight - element.clientHeight - element.scrollTop > 2)
+      const moreBelow = element.scrollHeight - element.clientHeight - element.scrollTop > 2
+      element.dataset.moreBelow = String(moreBelow)
+      element.parentElement?.classList.toggle("has-more-answer-content", moreBelow)
     }
     const fit = () => {
       frame = 0
@@ -24,7 +27,7 @@ export function useFitStudyAnswerText(content: string, enabled: boolean, fontSca
       const height = element.clientHeight
       if (!(element.clientWidth > 0 && height > 0)) return
       element.style.removeProperty("--study-secondary-font")
-      for (const part of parts) part.style.setProperty("--answer-fit-scale", "1")
+      for (const part of parts) setCssProps(part, { "--answer-fit-scale": "1" })
       const primary = parts.find((part) => (part.dataset.columnIndex ?? "0") === "0")
       const secondary = parts.find((part) => part.dataset.columnIndex === "1")
       const fitWidth = (part: HTMLElement) => {
@@ -34,11 +37,11 @@ export function useFitStudyAnswerText(content: string, enabled: boolean, fontSca
         // Words remain intact. No fixed minimum may force an overflowing word.
         for (let iteration = 0; iteration < 14; iteration++) {
           const scale = (lower + upper) / 2
-          part.style.setProperty("--answer-fit-scale", String(scale))
+          setCssProps(part, { "--answer-fit-scale": String(scale) })
           if (part.scrollWidth <= part.clientWidth) lower = scale
           else upper = scale
         }
-        part.style.setProperty("--answer-fit-scale", String(lower))
+        setCssProps(part, { "--answer-fit-scale": String(lower) })
         return lower
       }
       const primaryScale = primary ? fitWidth(primary) : 1
@@ -46,11 +49,11 @@ export function useFitStudyAnswerText(content: string, enabled: boolean, fontSca
         ? parseFloat(getComputedStyle(primary).fontSize)
         : secondary ? parseFloat(getComputedStyle(secondary).fontSize) / 0.75 : 0
       if (referenceFont > 0)
-        element.style.setProperty("--study-secondary-font", `${referenceFont * 0.75}px`)
+        setCssProps(element, { "--study-secondary-font": `${referenceFont * 0.75}px` })
       const secondaryScale = secondary ? fitWidth(secondary) : 1
       const setScale = (scale: number) => {
-        primary?.style.setProperty("--answer-fit-scale", String(primaryScale * scale))
-        secondary?.style.setProperty("--answer-fit-scale", String(secondaryScale * scale))
+        if (primary) setCssProps(primary, { "--answer-fit-scale": String(primaryScale * scale) })
+        if (secondary) setCssProps(secondary, { "--answer-fit-scale": String(secondaryScale * scale) })
       }
       // Keep simple names within the first viewport. Structured/legacy answers
       // stay readable and scrollable instead of shrinking an entire essay.
@@ -73,12 +76,12 @@ export function useFitStudyAnswerText(content: string, enabled: boolean, fontSca
         ? parseFloat(getComputedStyle(primary).fontSize)
         : referenceFont
       if (fittedPrimaryFont > 0)
-        element.style.setProperty("--study-primary-font", `${fittedPrimaryFont}px`)
-      element.style.setProperty("--study-info-gap", `${Math.max(16 * fontScale, fittedPrimaryFont * 0.65)}px`)
+        setCssProps(element, { "--study-primary-font": `${fittedPrimaryFont}px` })
+      setCssProps(element, { "--study-info-gap": `${Math.max(16 * fontScale, fittedPrimaryFont * 0.65)}px` })
       updateScrollHint()
     }
     const schedule = () => {
-      if (!disposed && !frame) frame = requestAnimationFrame(fit)
+      if (!disposed && !frame) frame = window.requestAnimationFrame(fit)
     }
     const resize = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule)
     resize?.observe(element)
@@ -92,13 +95,14 @@ export function useFitStudyAnswerText(content: string, enabled: boolean, fontSca
     schedule()
     return () => {
       disposed = true
-      if (frame) cancelAnimationFrame(frame)
+      if (frame) window.cancelAnimationFrame(frame)
       resize?.disconnect()
       mutations.disconnect()
       window.removeEventListener("resize", schedule)
       fonts?.removeEventListener("loadingdone", schedule)
       element.removeEventListener("scroll", updateScrollHint)
       delete element.dataset.moreBelow
+      element.parentElement?.classList.remove("has-more-answer-content")
       for (const part of names.querySelectorAll<HTMLElement>(".card-answer-part"))
         part.style.removeProperty("--answer-fit-scale")
       element.style.removeProperty("--study-secondary-font")
@@ -162,15 +166,13 @@ export default function useFitAnswerText(
       if (!(availableWidth > 0 && preferredFont > 0)) return
 
       const measure = () => {
-        const savedStyles = measurableBlocks.map((block) =>
-          block.getAttribute("style"),
+        const measuringClasses = measurableBlocks.map((block) =>
+          block.classList.contains("card-answer-measure"),
         )
         try {
           return Math.max(
             ...measurableBlocks.map((block) => {
-              block.style.setProperty("width", "max-content", "important")
-              block.style.setProperty("max-width", "none", "important")
-              block.style.setProperty("white-space", "nowrap", "important")
+              block.classList.add("card-answer-measure")
               const range = document.createRange()
               range.selectNodeContents(block)
               const bounds = block.getBoundingClientRect()
@@ -186,9 +188,7 @@ export default function useFitAnswerText(
           )
         } finally {
           measurableBlocks.forEach((block, index) => {
-            const savedStyle = savedStyles[index]
-            if (savedStyle === null) block.removeAttribute("style")
-            else block.setAttribute("style", savedStyle)
+            block.classList.toggle("card-answer-measure", measuringClasses[index])
           })
         }
       }
@@ -202,7 +202,7 @@ export default function useFitAnswerText(
         1,
         Math.max(minimumScale, (availableWidth - 2) / naturalWidth),
       )
-      element.style.setProperty("--answer-fit-scale", String(scale))
+      setCssProps(element, { "--answer-fit-scale": String(scale) })
       // Recheck the actual fitted glyphs to account for pixel rounding and
       // native Markdown elements whose metrics do not scale perfectly linearly.
       let fittedWidth = measure()
@@ -211,7 +211,7 @@ export default function useFitAnswerText(
           minimumScale,
           (scale * (availableWidth - 2)) / fittedWidth,
         )
-        element.style.setProperty("--answer-fit-scale", String(scale))
+        setCssProps(element, { "--answer-fit-scale": String(scale) })
         fittedWidth = measure()
       }
       // Preserve the existing no-wrap treatment for a single plain text block.
@@ -245,14 +245,11 @@ export default function useFitAnswerText(
           currentStyle.getPropertyValue("--card-answer-part-gap"),
         )
         if (Number.isFinite(smallerFont * gap))
-          current.style.setProperty(
-            "--answer-part-spacing",
-            `${smallerFont * gap}px`,
-          )
+          setCssProps(current, { "--answer-part-spacing": `${smallerFont * gap}px` })
       }
     }
     const schedule = () => {
-      if (!disposed && !frame) frame = requestAnimationFrame(fit)
+      if (!disposed && !frame) frame = window.requestAnimationFrame(fit)
     }
     const resize =
       typeof ResizeObserver === "undefined"
@@ -275,7 +272,7 @@ export default function useFitAnswerText(
     return () => {
       disposed = true
       reset()
-      if (frame) cancelAnimationFrame(frame)
+      if (frame) window.cancelAnimationFrame(frame)
       resize?.disconnect()
       mutations.disconnect()
       window.removeEventListener("resize", schedule)

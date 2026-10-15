@@ -127,7 +127,7 @@
 }
 
 .flashcard-genius-root .stats-table-panel {
-  background: #FFFFFF !important;
+  background: #FFF !important;
   color: #111110 !important;
   border-color: #E2DED4 !important;
 }
@@ -148,7 +148,7 @@
 .flashcard-genius-root .stats-table-panel tr,
 .flashcard-genius-root .stats-table-panel th,
 .flashcard-genius-root .stats-table-panel td {
-  background: #FFFFFF !important;
+  background: #FFF !important;
 }
 
 .flashcard-genius-root .stats-table-panel table,
@@ -158,7 +158,7 @@
 
 .flashcard-genius-root .stats-table-panel .markdown-image-zoom,
 .flashcard-genius-root .stats-table-panel .markdown-image-zoom * {
-  color: #FFFFFF !important;
+  color: #FFF !important;
 }
 
 .flashcard-genius-root.theme-dark .stats-mode {
@@ -225,7 +225,7 @@
   border-color: var(--app-panel-border) !important;
 }
 
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
 .flashcard-genius-root .workspace-card .card-action-control:not(.difficulty-stars):not(.source-card-control),
 .flashcard-genius-root .flip-card .card-action-control:not(.difficulty-stars) {
     display: none !important;
@@ -269,13 +269,16 @@
 .flashcard-genius-settings {
   --app-ui-font-scale: 1.125;
 }
+
 .flashcard-genius-settings .setting-item-name {
   font-size: calc(var(--font-ui-medium, 14px) * var(--app-ui-font-scale));
 }
+
 .flashcard-genius-settings .setting-item-description,
 .flashcard-genius-settings :is(button, select, input) {
   font-size: calc(var(--font-ui-small, 12px) * var(--app-ui-font-scale));
 }
+
 .flashcard-genius-settings button {
   font-weight: 600;
 }

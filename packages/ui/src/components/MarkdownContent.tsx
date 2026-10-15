@@ -126,7 +126,7 @@ function prepareNativeMarkdown(markdown: string): string {
   // Obsidian wiki embeds expect vault paths, not resolved resource URLs.
   for (const image of extractMarkdownImages(markdown).reverse()) {
     if (!image.raw.startsWith('![[') || !/^(app:|capacitor:|blob:|data:)/i.test(image.path)) continue
-    const alt = image.alt.replace(/[\[\]]/g, '')
+    const alt = image.alt.replace(/[[\]]/g, '')
     markdown = `${markdown.slice(0, image.start)}![${alt}](${image.path})${markdown.slice(image.end)}`
   }
   return stripRemoteImages(markdown)
@@ -140,12 +140,12 @@ function addImageZoomControls(element: HTMLElement, onOpen: (src: string, alt: s
     const parent = image.parentNode
     if (!parent) continue
 
-    const wrapper = document.createElement('span')
+    const wrapper = createSpan()
     wrapper.className = 'markdown-image'
     image.removeAttribute('width')
     image.removeAttribute('height')
     for (const property of ['width', 'height', 'max-width', 'max-height']) image.style.removeProperty(property)
-    const embed = image.closest('.internal-embed.image-embed') as HTMLElement | null
+    const embed = image.closest<HTMLElement>('.internal-embed.image-embed')
     if (embed) {
       embed.removeAttribute('width')
       embed.removeAttribute('height')
@@ -154,7 +154,7 @@ function addImageZoomControls(element: HTMLElement, onOpen: (src: string, alt: s
     parent.insertBefore(wrapper, image)
     wrapper.appendChild(image)
 
-    const button = document.createElement('button')
+    const button = createEl('button')
     button.className = 'markdown-image-zoom'
     button.type = 'button'
     const alt = image.alt || 'Flashcard image'
