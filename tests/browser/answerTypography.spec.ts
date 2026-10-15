@@ -181,6 +181,13 @@ test("keeps text fonts independent of card size, preserves scrolling and applies
     ".text-question-answer .card-answer-part",
   )
   const image = part(page, "bird-short", 1)
+  const primary = part(page, "bird-short", 0)
+  // Only the primary font is based directly on the manual scale. The secondary
+  // is derived from the fitted primary, so its rendered size may grow less.
+  const preferredPrimaryFont = () => primary.evaluate((node) => {
+    const fit = Number((node as HTMLElement).style.getPropertyValue("--answer-fit-scale")) || 1
+    return parseFloat(getComputedStyle(node).fontSize) / fit
+  })
   const smallText = await fontSize(text)
   const smallImage = await fontSize(image)
   expect(smallText).toBeCloseTo(13 * 1.125, 3)
@@ -199,8 +206,13 @@ test("keeps text fonts independent of card size, preserves scrolling and applies
       expect(await fontSize(part(page, "text-columns", index))).toBe(smallText)
   }
   await columns(page, 3)
+  // Exercise fitting with wider glyph metrics, independently of the host OS font.
+  await primary.evaluate((node) => {
+    (node as HTMLElement).style.letterSpacing = "0.12em"
+  })
   const largeText = await fontSize(text)
   const largeImage = await fontSize(image)
+  const largePreferredPrimary = await preferredPrimaryFont()
   expect(largeText).toBe(smallText)
   expect(largeImage).toBeGreaterThan(smallImage)
   const viewport = card(page, "text-answer").locator(
@@ -231,8 +243,19 @@ test("keeps text fonts independent of card size, preserves scrolling and applies
   await slider.focus()
   await slider.press("Home")
   for (let step = 0; step < 16; step++) await slider.press("ArrowRight")
-  expect(await fontSize(text)).toBeCloseTo(largeText * 1.5, 0)
-  expect(await fontSize(image)).toBeCloseTo(largeImage * 1.5, 0)
+  await expect(slider).toHaveValue("150")
+  await expect.poll(() => fontSize(text)).toBeCloseTo(largeText * 1.5, 0)
+  await expect.poll(preferredPrimaryFont).toBeCloseTo(largePreferredPrimary * 1.5, 2)
+  await assertTextFits(primary)
+  await assertTextFits(image)
+  await expect.poll(async () => (await fontSize(image)) / (await fontSize(primary)))
+    .toBeCloseTo(0.75, 3)
+  await expect.poll(() => primary.evaluate((node) =>
+    Number((node as HTMLElement).style.getPropertyValue("--answer-fit-scale"))))
+    .toBeLessThan(1)
+  const fittedImage = await fontSize(image)
+  expect(fittedImage).toBeGreaterThan(largeImage)
+  expect(fittedImage).toBeLessThanOrEqual(largeImage * 1.5 + 0.01)
   expect(await fontSize(uiButton)).toBe(uiFont)
   await openSize(page)
   await page.getByRole("button", { name: "Library", exact: true }).click()
