@@ -44,7 +44,7 @@ test('retains Library front geometry on selection and derives secondary fonts fr
   for (let index = 1; index < fonts.length; index++) {
     expect(fonts[index]).toBeCloseTo(fonts[index - 1] * 0.75, 2)
   }
-  await expect(card.locator('.answer-column-divider')).toHaveCount(3)
+  await expect(card.locator('.answer-column-divider')).toHaveCount(2)
   await expect(card.locator('textarea')).toHaveCount(0)
   await expect(page.locator('#workspace-card-text-columns .answer-column-divider')).toHaveCount(2)
 })
