@@ -5,6 +5,7 @@ import StatsMode from './components/StatsMode'
 import StudyMode from './components/StudyMode'
 import TopBar from './components/TopBar'
 import Workspace from './components/Workspace'
+import useCardColumns from './components/useCardColumns'
 import type { MarkdownRenderContext } from './markdownRenderer'
 import { resolveMarkdownSource } from './sourceSelection'
 
@@ -40,6 +41,7 @@ export default function ReadonlyFlashcardApp({
 }: Props) {
   const [cardList, setCardList] = useState(cards)
   const [mode, setMode] = useState<AppMode>('edit')
+  const [cardColumns, setCardColumns] = useCardColumns()
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(initialDeckId ?? decks[0]?.id ?? null)
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const selectedDeckSourceKeyRef = useRef(decks.find(deck => deck.id === (initialDeckId ?? decks[0]?.id))?.sourceFileName ?? null)
@@ -258,6 +260,8 @@ export default function ReadonlyFlashcardApp({
         ) : mode === 'study' ? (
           <StudyMode
             cards={studyCards}
+            cardColumns={cardColumns}
+            onCardColumnsChange={setCardColumns}
             selectedCardId={selectedCardId}
             onSelectCard={handleSelectCard}
             deck={selectedDeck}
@@ -279,6 +283,8 @@ export default function ReadonlyFlashcardApp({
         ) : (
           <Workspace
             cards={visibleCards}
+            cardColumns={cardColumns}
+            onCardColumnsChange={setCardColumns}
             deck={selectedDeck}
             topics={topics}
             cardOrder={selectedDeckId ? cardOrderByDeck[selectedDeckId] : undefined}

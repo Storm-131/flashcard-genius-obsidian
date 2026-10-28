@@ -12,6 +12,36 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/')
 })
 
+test('keeps the chosen cards per row when switching between Library and Study', async ({ page }) => {
+  await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click()
+  const setColumns = async (count: number) => {
+    await page.getByRole('button', { name: 'Card size', exact: true }).click()
+    await page.getByRole('button', { name: String(count), exact: true }).click()
+    await page.getByRole('button', { name: 'Card size', exact: true }).click()
+  }
+  const columnCount = (selector: string) => page.locator(selector).evaluate(node =>
+    getComputedStyle(node.parentElement!).gridTemplateColumns.split(' ').length,
+  )
+
+  await setColumns(3)
+  await page.getByRole('button', { name: 'Study', exact: true }).click()
+  await expect.poll(() => columnCount('.flip-card[data-card-id="c0"]')).toBe(3)
+  await setColumns(5)
+  await page.getByRole('button', { name: 'Library', exact: true }).click()
+  await expect.poll(() => columnCount('#workspace-card-c0')).toBe(5)
+
+  await page.setViewportSize({ width: 420, height: 900 })
+  await expect.poll(() => columnCount('#workspace-card-c0')).toBe(1)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await expect.poll(() => columnCount('#workspace-card-c0')).toBe(5)
+
+  await page.getByRole('button', { name: 'Card size', exact: true }).click()
+  await page.getByRole('button', { name: 'Default (square cards)' }).click()
+  await page.getByRole('button', { name: 'Card size', exact: true }).click()
+  await page.getByRole('button', { name: 'Study', exact: true }).click()
+  await expect.poll(() => columnCount('.flip-card[data-card-id="c0"]')).toBe(4)
+})
+
 test('synchronises selection and keyboard focus across Finder, Library and Study', async ({ page }) => {
   const libraryCard = page.locator('#workspace-card-c0')
   await libraryCard.click()

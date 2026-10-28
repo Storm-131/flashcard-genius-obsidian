@@ -14,6 +14,7 @@ import CardQuestion from "./CardQuestion"
 import useFitAnswerText from "./useFitAnswerText"
 import useCardNavigation from "./useCardNavigation"
 import CardFontSizeControl, { useCardFontSize } from "./CardFontSizeControl"
+import useCardColumns, { type CardColumns } from "./useCardColumns"
 import {
   extractMarkdownImages,
   stripMarkdownImages,
@@ -29,6 +30,8 @@ interface Props {
   cardOrderByDeck: Record<string, string[]>
   selectedCardId?: string | null
   onSelectCard?: (id: string) => void
+  cardColumns?: CardColumns
+  onCardColumnsChange?: (value: CardColumns) => void
   onExit: () => void
   onEditSource?: () => void
   onDifficultyChange: (id: string, difficulty: number) => void
@@ -345,6 +348,8 @@ export default function StudyMode({
   cardOrderByDeck,
   selectedCardId,
   onSelectCard,
+  cardColumns,
+  onCardColumnsChange,
   onEditSource,
   onDifficultyChange,
   immutable = false,
@@ -393,8 +398,8 @@ export default function StudyMode({
     useState<"edit-order" | "difficulty-asc" | "difficulty-desc" | "shuffled" | "revealed-last">(
       "edit-order",
     )
-  const [cardsPerRow, setCardsPerRow] = useState(4)
-  const [cardsPerRowManuallySet, setCardsPerRowManuallySet] = useState(false)
+  const [columnSettings, setColumnSettings] = useCardColumns(cardColumns, onCardColumnsChange)
+  const { count: cardsPerRow, manuallySet: cardsPerRowManuallySet } = columnSettings
   const [cardHeight, setCardHeight] = useState(200)
   const [cardFontSize, setCardFontSize] = useCardFontSize()
   const [squareCards, setSquareCards] = useState(true)
@@ -968,8 +973,7 @@ export default function StudyMode({
                           key={value}
                           type="button"
                           onClick={() => {
-                            setCardsPerRow(value)
-                            setCardsPerRowManuallySet(true)
+                            setColumnSettings({ count: value, manuallySet: true })
                           }}
                           aria-pressed={effectiveCardsPerRow === value}
                           style={{
@@ -1036,8 +1040,7 @@ export default function StudyMode({
                   <button
                     type="button"
                     onClick={() => {
-                      setCardsPerRow(4)
-                      setCardsPerRowManuallySet(false)
+                      setColumnSettings({ count: 4, manuallySet: false })
                       setCardHeight(200)
                       setSquareCards(true)
                       setCardFontSize(100)
@@ -1166,8 +1169,7 @@ export default function StudyMode({
                           key={value}
                           type="button"
                           onClick={() => {
-                            setCardsPerRow(value)
-                            setCardsPerRowManuallySet(true)
+                            setColumnSettings({ count: value, manuallySet: true })
                           }}
                           aria-pressed={effectiveCardsPerRow === value}
                           style={{
@@ -1264,8 +1266,7 @@ export default function StudyMode({
                   <button
                     type="button"
                     onClick={() => {
-                      setCardsPerRow(4)
-                      setCardsPerRowManuallySet(false)
+                      setColumnSettings({ count: 4, manuallySet: false })
                       setCardHeight(200)
                       setSquareCards(true)
                       setCardFontSize(100)

@@ -16,6 +16,7 @@ import CardQuestion from "./CardQuestion"
 import useFitAnswerText from "./useFitAnswerText"
 import useCardNavigation from "./useCardNavigation"
 import CardFontSizeControl, { useCardFontSize } from "./CardFontSizeControl"
+import useCardColumns, { type CardColumns } from "./useCardColumns"
 import { hasMarkdownImages } from "../images/markdownImages"
 import type { Card, Deck, DeckTopic, SortOrder } from "../types"
 import type { MarkdownRenderContext } from "../markdownRenderer"
@@ -27,6 +28,8 @@ interface Props {
   cardOrder?: string[]
   selectedCardId: string | null
   onSelectCard: (id: string) => void
+  cardColumns?: CardColumns
+  onCardColumnsChange?: (value: CardColumns) => void
   onEditSource?: () => void
   markdownContext?: MarkdownRenderContext
   cardSourcePaths?: Record<string, string>
@@ -296,7 +299,7 @@ function CardItem({
         width: "100%",
         background: "var(--app-divider, var(--app-accent, #4F46E5))",
         opacity: isSelected ? 0.82 : 0.72,
-        marginBottom: cardHasImage && !isSelected ? 0 : "10px",
+        marginBottom: questionHasImage ? (cardHasImage && !isSelected ? 0 : "10px") : undefined,
       }}
     />
   )
@@ -589,6 +592,8 @@ export default function Workspace({
   cardOrder,
   selectedCardId,
   onSelectCard,
+  cardColumns,
+  onCardColumnsChange,
   onEditSource,
   markdownContext,
   cardSourcePaths,
@@ -607,8 +612,8 @@ export default function Workspace({
   onToggleShowStars,
   onImageDeckActionBlocked,
 }: Props) {
-  const [cardsPerRow, setCardsPerRow] = useState(4)
-  const [cardsPerRowManuallySet, setCardsPerRowManuallySet] = useState(false)
+  const [columnSettings, setColumnSettings] = useCardColumns(cardColumns, onCardColumnsChange)
+  const { count: cardsPerRow, manuallySet: cardsPerRowManuallySet } = columnSettings
   const [cardHeight, setCardHeight] = useState(200)
   const [cardFontSize, setCardFontSize] = useCardFontSize()
   const [squareCards, setSquareCards] = useState(true)
@@ -1325,8 +1330,7 @@ export default function Workspace({
                             key={value}
                             type="button"
                             onClick={() => {
-                              setCardsPerRow(value)
-                              setCardsPerRowManuallySet(true)
+                              setColumnSettings({ count: value, manuallySet: true })
                             }}
                             aria-pressed={effectiveCardsPerRow === value}
                             style={{
@@ -1391,8 +1395,7 @@ export default function Workspace({
                     <button
                       type="button"
                       onClick={() => {
-                        setCardsPerRow(4)
-                        setCardsPerRowManuallySet(false)
+                        setColumnSettings({ count: 4, manuallySet: false })
                         setCardHeight(200)
                         setSquareCards(true)
                         setCardFontSize(100)
@@ -1489,8 +1492,7 @@ export default function Workspace({
                           key={value}
                           type="button"
                           onClick={() => {
-                            setCardsPerRow(value)
-                            setCardsPerRowManuallySet(true)
+                            setColumnSettings({ count: value, manuallySet: true })
                           }}
                           aria-pressed={effectiveCardsPerRow === value}
                           style={{
@@ -1587,8 +1589,7 @@ export default function Workspace({
                   <button
                     type="button"
                     onClick={() => {
-                      setCardsPerRow(4)
-                      setCardsPerRowManuallySet(false)
+                      setColumnSettings({ count: 4, manuallySet: false })
                       setCardHeight(200)
                       setSquareCards(true)
                       setCardFontSize(100)

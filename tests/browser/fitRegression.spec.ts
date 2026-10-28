@@ -37,7 +37,7 @@ test('Library image answers reserve the first viewport for answer one using a si
     expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(frame!.y + frame!.height + 1)
     expect(bounds!.y).toBeGreaterThanOrEqual(frame!.y)
     const parts = card.locator('.card-answer-part')
-    expect(await font(parts.nth(1))).toBeCloseTo(await font(primary) * 0.75, 2)
+    expect(await font(parts.nth(1))).toBeCloseTo(await font(primary) * 0.85, 2)
     await expect.poll(() => page.locator('#workspace-card-single .card-content-viewport').evaluate(node => node.scrollHeight - node.clientHeight)).toBeLessThanOrEqual(1)
   }
   await setColumns(page, 4)
@@ -59,6 +59,13 @@ test('fits text questions in width and height and derives text and image answer 
     const card = page.locator('[data-card-id="text"]')
     const question = card.locator('[data-fit-question]').first()
     const answer = card.locator('.card-answer-part').first()
+    const divider = card.locator(mode === 'study' ? '.study-answer-divider' : '.question-answer-divider')
+    const dividerMargins = await divider.evaluate(node => {
+      const style = getComputedStyle(node)
+      return [parseFloat(style.marginTop), parseFloat(style.marginBottom)]
+    })
+    expect(dividerMargins[0]).toBeGreaterThanOrEqual(6)
+    expect(dividerMargins[1]).toBeGreaterThanOrEqual(12)
     for (const count of [4, 6, 2]) {
       await setColumns(page, count)
       await expect.poll(() => card.evaluate(node => (node as HTMLElement).style.getPropertyValue('--card-question-font-size'))).not.toBe('')
@@ -66,7 +73,7 @@ test('fits text questions in width and height and derives text and image answer 
         const slot = node.closest('.question-fit-slot')!
         return node.scrollWidth <= slot.clientWidth + 1 && node.scrollHeight <= slot.clientHeight + 1
       })).toBe(true)
-      expect(await font(answer)).toBeCloseTo(await font(question) * 0.75, 2)
+      expect(await font(answer)).toBeCloseTo(await font(question) * 0.85, 2)
       await expect(card.getByRole('button', { name: 'Read full question' }).first()).toHaveCount(0)
       expect(await question.evaluate(node => getComputedStyle(node).overflowWrap)).toBe('normal')
     }
@@ -75,7 +82,7 @@ test('fits text questions in width and height and derives text and image answer 
     const before = await font(question)
     await slider.fill('150')
     await expect.poll(() => font(question)).toBeCloseTo(before * 1.5, 2)
-    expect(await font(answer)).toBeCloseTo(await font(question) * 0.75, 2)
+    expect(await font(answer)).toBeCloseTo(await font(question) * 0.85, 2)
     await slider.fill('100')
     await page.getByRole('button', { name: 'Card size', exact: true }).click()
     if (mode === 'study') {
@@ -85,7 +92,7 @@ test('fits text questions in width and height and derives text and image answer 
       const parts = image.locator('.card-answer-part')
       const imageFonts = await parts.evaluateAll(nodes => nodes.map(node => parseFloat(getComputedStyle(node).fontSize)))
       for (let index = 1; index < imageFonts.length; index++) {
-        expect(imageFonts[index]).toBeCloseTo(imageFonts[index - 1] * 0.75, 2)
+        expect(imageFonts[index]).toBeCloseTo(imageFonts[index - 1] * 0.85, 2)
       }
       await expect(image.locator('.library-additional-answers')).toHaveCount(0)
     }

@@ -55,7 +55,7 @@ test('fills front image frames, renders compact column dividers and preserves co
     expect(await lines.evaluateAll(nodes => nodes.map(node => getComputedStyle(node).height))).toEqual(['3px', '2px', '2px'])
     const fonts = await back.locator('.card-answer-part').evaluateAll(nodes => nodes.map(node => parseFloat(getComputedStyle(node).fontSize)))
     for (let index = 1; index < fonts.length; index++) {
-      expect(fonts[index]).toBeCloseTo(fonts[index - 1] * 0.75, 2)
+      expect(fonts[index]).toBeCloseTo(fonts[index - 1] * 0.85, 2)
     }
     const gaps = await lines.evaluateAll(nodes => nodes.map(node => parseFloat(getComputedStyle(node).marginTop) + parseFloat(getComputedStyle(node).marginBottom)))
     expect(Math.max(...gaps)).toBeLessThan(22)

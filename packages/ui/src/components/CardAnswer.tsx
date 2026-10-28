@@ -27,7 +27,7 @@ export default function CardAnswer({ card, content, imageQuestion, fontScale, li
       <div
         className={`card-answer-part${index === 0 ? ' is-primary-answer' : ''}`}
         data-column-index={part.columnIndex}
-        style={imageQuestion ? { fontSize: `calc(var(--image-primary-font-size, var(--image-preferred-font)) * ${Math.pow(0.75, index)})` } : undefined}
+        style={imageQuestion ? { fontSize: `calc(var(--image-primary-font-size, var(--image-preferred-font)) * ${Math.pow(0.85, index)})` } : undefined}
       >
         <MarkdownContent content={part.content} markdownContext={markdownContext} sourcePath={sourcePath} style={{ fontSize: 'inherit', color: 'inherit', lineHeight: 'inherit' }} />
       </div>

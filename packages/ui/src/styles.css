@@ -3,7 +3,6 @@
   --card-text-base-scale: 1.125;
   --card-image-max-height: 75cqh;
 
-  --card-answer-ratio: 0.75;
   --card-image-answer-base: 20px;
   --answer-divider-primary: 3px;
   --answer-divider-secondary: 2px;
@@ -30,7 +29,11 @@
    where inherited custom-property references would use the default value. */
 .flashcard-genius-root :is(.workspace-card, .flip-card) {
   --question-preferred-font: calc(var(--card-question-base, 13px) * var(--card-font-scale, 1) * var(--card-text-base-scale));
-  --card-text-font-size: calc(var(--card-question-font-size, var(--question-preferred-font)) * var(--card-answer-ratio));
+  --card-text-font-size: calc(var(--card-question-font-size, var(--question-preferred-font)) * 0.85);
+}
+
+.flashcard-genius-root :is(.workspace-card, .flip-card)[data-card-kind="text"] {
+  --answer-divider-gap: clamp(0.65rem, 0.8em, 1rem);
 }
 
 .flashcard-genius-root .flip-card {
@@ -232,6 +235,14 @@
   margin: 4px 0 11px;
   background: var(--app-divider, var(--app-accent, #4F46E5));
   opacity: 0.82;
+}
+
+:scope :is(.workspace-card, .flip-card)[data-card-kind="text"] :is(.question-answer-divider, .study-answer-divider) {
+  margin-block: clamp(0.4rem, 0.6em, 0.65rem) clamp(0.75rem, 1em, 1rem);
+}
+
+:scope .flip-card-back .card-question-text {
+  color: #fff;
 }
 
 .theme-neutral .question-answer-divider,

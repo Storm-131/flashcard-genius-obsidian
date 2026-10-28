@@ -11,10 +11,11 @@ test('derives image and text answer fonts from their fitted references with the 
   const sizes = () => parts.evaluateAll(nodes => nodes.map(node => parseFloat(getComputedStyle(node).fontSize)))
   const original = await sizes()
   for (let index = 1; index < original.length; index++) {
-    expect(original[index]).toBeCloseTo(original[index - 1] * 0.75, 2)
+    expect(original[index]).toBeCloseTo(original[index - 1] * 0.85, 2)
   }
   const questionFont = await text.locator('[data-fit-question]').first().evaluate(node => parseFloat(getComputedStyle(node).fontSize))
-  expect(await text.locator('.card-answer-part').first().evaluate(node => parseFloat(getComputedStyle(node).fontSize))).toBeCloseTo(questionFont * 0.75, 2)
+  expect(await text.locator('.card-answer-part').first().evaluate(node => parseFloat(getComputedStyle(node).fontSize))).toBeCloseTo(questionFont * 0.85, 2)
+  await expect(text.locator('.flip-card-back [data-fit-question]')).toHaveCSS('color', 'rgb(255, 255, 255)')
   await expect(image.locator('.answer-column-divider')).toHaveCount(2)
   await expect(image.locator('.flip-card-back img')).toHaveCount(0)
   await expect(image.locator('.image-question-answer, .study-answer-info')).toHaveCount(0)
@@ -25,7 +26,7 @@ test('derives image and text answer fonts from their fitted references with the 
   await page.getByRole('button', { name: '2', exact: true }).click()
   const larger = await sizes()
   for (let index = 1; index < larger.length; index++) {
-    expect(larger[index]).toBeCloseTo(larger[index - 1] * 0.75, 2)
+    expect(larger[index]).toBeCloseTo(larger[index - 1] * 0.85, 2)
   }
   await expect(parts.nth(1).locator('em')).toHaveCSS('font-style', 'italic')
 })
@@ -42,7 +43,7 @@ test('retains Library front geometry on selection and derives secondary fonts fr
   expect(after!.height).toBe(before!.height)
   const fonts = await card.locator('.card-answer-part').evaluateAll(nodes => nodes.map(node => parseFloat(getComputedStyle(node).fontSize)))
   for (let index = 1; index < fonts.length; index++) {
-    expect(fonts[index]).toBeCloseTo(fonts[index - 1] * 0.75, 2)
+    expect(fonts[index]).toBeCloseTo(fonts[index - 1] * 0.85, 2)
   }
   await expect(card.locator('.answer-column-divider')).toHaveCount(2)
   await expect(card.locator('textarea')).toHaveCount(0)
