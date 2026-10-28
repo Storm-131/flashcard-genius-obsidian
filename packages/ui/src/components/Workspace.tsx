@@ -901,6 +901,11 @@ export default function Workspace({
     columns: effectiveCardsPerRow,
     selectedCardId,
     onSelectCard,
+    onRate: (card, value) => {
+      if (card.hasDifficultyColumn !== false && !hasMarkdownImages(card.answer) && (!immutable || allowDifficultyChanges)) {
+        onDifficultyChange(card.id, value)
+      }
+    },
   })
 
   const resetCardDrag = () => {
