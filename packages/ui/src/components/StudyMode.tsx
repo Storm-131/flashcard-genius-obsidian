@@ -7,6 +7,7 @@ import {
   type CSSProperties,
 } from "react"
 import DifficultyStars from "./DifficultyStars"
+import StarsToggleButton from "./StarsToggleButton"
 import MarkdownContent from "./MarkdownContent"
 import CardAnswer from "./CardAnswer"
 import CardFontSizeControl, { useCardFontSize } from "./CardFontSizeControl"
@@ -240,7 +241,7 @@ export function StudyCard({
               value={card.difficulty ?? 0}
               onChange={onDifficultyChange}
               className="difficulty-stars card-action-control"
-              readOnly={immutable && !allowDifficultyChanges}
+              readOnly={card.hasDifficultyColumn === false || (immutable && !allowDifficultyChanges)}
             />
           )}
         </div>
@@ -355,7 +356,7 @@ export function StudyCard({
               onChange={onDifficultyChange}
               className="difficulty-stars card-action-control"
               darkBackground
-              readOnly={immutable && !allowDifficultyChanges}
+              readOnly={card.hasDifficultyColumn === false || (immutable && !allowDifficultyChanges)}
             />
           )}
         </div>
@@ -844,11 +845,10 @@ export default function StudyMode({
           )}
 
           {toolbarOverflowLevel < 4 && (
-            <button
-              type="button"
+            <StarsToggleButton
+              cards={cards}
+              showStars={showStars}
               onClick={handleStarsToggle}
-              aria-pressed={showStars}
-              title={showStars ? "Hide card stars" : "Show card stars"}
               style={{
                 padding: "0 10px",
                 height: "32px",
@@ -866,9 +866,7 @@ export default function StudyMode({
                 fontFamily: "inherit",
                 fontSize: "calc(12px * var(--app-ui-font-scale, 1.125))",
               }}
-            >
-              Stars
-            </button>
+            />
           )}
 
           {toolbarOverflowLevel < 3 && (
@@ -1337,10 +1335,10 @@ export default function StudyMode({
                   </button>
                 )}
                 {toolbarOverflowLevel >= 4 && (
-                  <button
-                    type="button"
+                  <StarsToggleButton
+                    cards={cards}
+                    showStars={showStars}
                     onClick={handleStarsToggle}
-                    aria-pressed={showStars}
                     style={{
                       height: "30px",
                       borderRadius: "6px",
@@ -1357,9 +1355,7 @@ export default function StudyMode({
                       fontFamily: "inherit",
                       fontSize: "calc(12px * var(--app-ui-font-scale, 1.125))",
                     }}
-                  >
-                    Stars
-                  </button>
+                  />
                 )}
                 {toolbarOverflowLevel >= 5 && (
                   <div style={{ display: "grid", gap: "8px" }}>

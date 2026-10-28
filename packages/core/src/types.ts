@@ -9,6 +9,8 @@ export interface Card {
   tags: string[]
   topicId?: string
   difficulty?: number
+  /** False disables ratings; omission preserves support for older in-memory cards. */
+  hasDifficultyColumn?: boolean
   deckId: string
 }
 

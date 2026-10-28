@@ -32,6 +32,20 @@ function renderEditor(card: Card = baseCard) {
 }
 
 describe('EditorPanel image upload', () => {
+  it('disables rating controls for cards imported without a difficulty column', () => {
+    const { onSave } = renderEditor({ ...baseCard, hasDifficultyColumn: false, difficulty: 0 })
+    const stars = screen.getAllByRole('button', { name: '0 out of 5 stars' })
+    expect(stars).toHaveLength(5)
+    for (const star of stars) {
+      expect(star).toBeDisabled()
+      fireEvent.click(star)
+    }
+    expect(screen.getByRole('button', { name: 'Clear stars' })).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Answer'), { target: { value: 'Updated answer' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save card' }))
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ hasDifficultyColumn: false, difficulty: 0, answer: 'Updated answer' }))
+  })
+
   it('speichert ein Bild und fügt die Markdown-Referenz nur in die Antwort ein', () => {
     const { storage } = renderEditor()
     const file = new File(['png'], 'Lern Grafik.png', { type: 'image/png' })

@@ -20,11 +20,52 @@ function parseRow(answers: string[], rating = "3", question = "Question") {
 }
 
 describe("positional Markdown cards", () => {
-  it("reads one answer column regardless of header names", () => {
+  it.each(["⭐", "⭐️", "★", "★︎", "*", "Sterne", "Stars", "Schwierigkeit", "Difficulty", "Rating", "  dIfFiCuLtY  "])(
+    "recognises the explicit final difficulty header %j",
+    (header) => {
+      const card = parseDeckMarkdown(`# Deck\n| Q | A | ${header} |\n| --- | --- | --- |\n| Question | Answer | 4 |`).topics[0].cards[0]
+      expect(card).toMatchObject({ answer: "Answer", difficulty: 4, hasDifficultyColumn: true })
+    },
+  )
+
+  it.each(["Details", "Number", "", "Stars and notes", "R"])(
+    "retains numeric final answers under an unrecognised header %j",
+    (header) => {
+      const card = parseDeckMarkdown(`# Deck\n| Q | A | ${header} |\n| --- | --- | --- |\n| Question | Answer | 5 |`).topics[0].cards[0]
+      expect(card).toEqual({
+        question: "Question", answer: "Answer\n\n5", difficulty: 0, hasDifficultyColumn: false,
+        answerParts: [{ content: "Answer", columnIndex: 0 }, { content: "5", columnIndex: 1 }],
+      })
+    },
+  )
+
+  it("recognises only the last header, keeping earlier star headers as answer columns", () => {
+    const card = parseDeckMarkdown("# Deck\n| Q | Stars | Details |\n| --- | --- | --- |\n| Question | 3 | Important |")
+      .topics[0].cards[0]
+    expect(card).toMatchObject({ answer: "3\n\nImportant", difficulty: 0, hasDifficultyColumn: false })
+  })
+
+  it("preserves multiple answer columns and empty positions without stars", () => {
+    const card = parseDeckMarkdown("# Deck\n| Q | Name | Species | Notes |\n| --- | --- | --- | --- |\n| ![[bird.webp]] | | *Parus major* | **Bird**<br>Details |")
+      .topics[0].cards[0]
+    expect(card).toEqual({
+      question: "![[bird.webp]]", answer: "*Parus major*\n\n**Bird**\nDetails", difficulty: 0, hasDifficultyColumn: false,
+      answerParts: [{ content: "*Parus major*", columnIndex: 1 }, { content: "**Bird**\nDetails", columnIndex: 2 }],
+    })
+  })
+
+  it("keeps raw pipes in legacy single-answer tables without stars", () => {
+    const card = parseDeckMarkdown("# Deck\n| Q | A |\n| --- | --- |\n| Question | A|B |")
+      .topics[0].cards[0]
+    expect(card).toMatchObject({ answer: "A|B", hasDifficultyColumn: false })
+  })
+
+  it("reads one answer column with an explicit final rating header", () => {
     expect(parseRow(["**Answer**"])).toEqual({
       question: "Question",
       answer: "**Answer**",
       difficulty: 3,
+      hasDifficultyColumn: true,
     })
   })
 
@@ -56,6 +97,7 @@ describe("positional Markdown cards", () => {
         question: "![[Kohlmeise.webp|100]]",
         answer: "Bird\n\n*Parus major*",
         difficulty: 4,
+        hasDifficultyColumn: true,
         answerParts: [
           { content: "Bird", columnIndex: 0 },
           { content: "*Parus major*", columnIndex: 1 },
@@ -122,6 +164,7 @@ describe("positional Markdown cards", () => {
       question: "Question",
       answer: "Answer",
       difficulty: 0,
+      hasDifficultyColumn: true,
     })
   })
 
@@ -130,14 +173,14 @@ describe("positional Markdown cards", () => {
       parseDeckMarkdown(
         "# Deck\n| Q | A |\n| --- | --- |\n| Question | Answer |",
       ).topics[0].cards[0],
-    ).toEqual({ question: "Question", answer: "Answer", difficulty: 0 })
+    ).toEqual({ question: "Question", answer: "Answer", difficulty: 0, hasDifficultyColumn: false })
     expect(
       parseDeckMarkdown(
         "# Deck\n## Allgemein\n#### **Question**\nAnswer\n- - -",
       ).topics[0],
     ).toEqual({
       name: "General",
-      cards: [{ question: "Question", answer: "Answer", difficulty: 0 }],
+      cards: [{ question: "Question", answer: "Answer", difficulty: 0, hasDifficultyColumn: false }],
     })
   })
 
@@ -149,6 +192,7 @@ describe("positional Markdown cards", () => {
       question: "![[Kohlmeise.webp|100]]",
       answer: "**Kohlmeise**\n(*Parus major*)",
       difficulty: 1,
+      hasDifficultyColumn: true,
       answerParts: [
         { content: "**Kohlmeise**\n(*Parus major*)", columnIndex: 0 },
       ],

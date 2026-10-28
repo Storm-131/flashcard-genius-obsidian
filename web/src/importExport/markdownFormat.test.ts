@@ -3,10 +3,38 @@ import templateMarkdown from '../../../docs/Template.md?raw'
 import { ImportExportError } from './errors'
 import { materializeDeckDocuments } from './importService'
 import { parseDeckMarkdown } from './markdownParser'
-import { serializeDeckMarkdown, uniqueDeckFileNames } from './markdownSerializer'
+import { buildDeckDocument, serializeDeckMarkdown, uniqueDeckFileNames } from './markdownSerializer'
 import type { DeckDocument } from './types'
 
 describe('Markdown deck format', () => {
+  it('retains mixed rating support and answer positions through materialisation and export', () => {
+    const document = parseDeckMarkdown('# Mixed\n## Topic\n| Q | A | Number |\n| --- | --- | --- |\n| One | Answer | 5 |\n\n| Q | A | Stars |\n| --- | --- | --- |\n| Two | Answer | 3 |\n\n| Q | Name | Species | Notes |\n| --- | --- | --- | --- |\n| Three | | Second | Final |')
+    const imported = materializeDeckDocuments([document])
+    expect(imported.cards.map(card => card.hasDifficultyColumn)).toEqual([false, true, false])
+    const exported = buildDeckDocument(imported.decks[0], imported.cards, imported.topics, imported.cardOrderByDeck[imported.decks[0].id])
+    const markdown = serializeDeckMarkdown(exported)
+    expect(parseDeckMarkdown(markdown)).toEqual(document)
+    expect(markdown.match(/⭐️/g)).toHaveLength(1)
+    expect(markdown).toContain('| One | Answer | 5 |')
+    expect(markdown).toContain('| Three |  | Second | Final |')
+  })
+
+  it('exports cards without ratings without adding a difficulty column or storing stars', () => {
+    const document = parseDeckMarkdown('# Deck\n| Q | A |\n| --- | --- |\n| Question | Answer |')
+    // A stale in-memory rating must not enable a column during export.
+    document.topics[0].cards[0].difficulty = 5
+    const markdown = serializeDeckMarkdown(document)
+    expect(markdown).toContain('| Question | Answer |\n')
+    expect(markdown).not.toContain('⭐')
+    expect(markdown).not.toContain('5')
+    expect(parseDeckMarkdown(markdown).topics[0].cards[0]).toMatchObject({ difficulty: 0, hasDifficultyColumn: false })
+  })
+
+  it('continues exporting older in-memory cards with their ratings', () => {
+    const document: DeckDocument = { title: 'Deck', topics: [{ name: 'Topic', cards: [{ question: 'Q', answer: 'A', difficulty: 4 }] }] }
+    expect(parseDeckMarkdown(serializeDeckMarkdown(document)).topics[0].cards[0]).toMatchObject({ difficulty: 4, hasDifficultyColumn: true })
+  })
+
   it('parses the required Template.md table structure', () => {
     const document = parseDeckMarkdown(templateMarkdown, 'Template.md')
 
@@ -37,6 +65,7 @@ describe('Markdown deck format', () => {
           question: 'Was ist **ATP**?',
           answer: 'Ein Energieträger.\n\n- Punkt 1\n- Punkt 2\n\n![Schema](img/schema.png)',
           difficulty: 4,
+          hasDifficultyColumn: true,
         }],
       }],
     }
@@ -84,6 +113,7 @@ describe('Markdown deck format', () => {
       question: 'Conditional probability',
       answer: '$P(A|B) = P(A \\cap B) / P(B)$',
       difficulty: 5,
+      hasDifficultyColumn: true,
     })
   })
 

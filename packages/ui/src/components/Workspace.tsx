@@ -9,6 +9,7 @@ import {
   type DragEvent,
 } from "react"
 import DifficultyStars from "./DifficultyStars"
+import StarsToggleButton from "./StarsToggleButton"
 import MarkdownContent from "./MarkdownContent"
 import CardAnswer from "./CardAnswer"
 import CardFontSizeControl, { useCardFontSize } from "./CardFontSizeControl"
@@ -443,7 +444,7 @@ function CardItem({
           value={card.difficulty ?? 0}
           onChange={onDifficultyChange}
           className="difficulty-stars card-action-control"
-          readOnly={immutable && !allowDifficultyChanges}
+          readOnly={card.hasDifficultyColumn === false || (immutable && !allowDifficultyChanges)}
         />
       )}
       {!immutable && (
@@ -1325,11 +1326,10 @@ export default function Workspace({
             )}
 
             {visibleToolbarActionCount > 2 && (
-              <button
-                type="button"
+              <StarsToggleButton
+                cards={cards}
+                showStars={showStars}
                 onClick={handleStarsToolbarClick}
-                aria-pressed={showStars}
-                title={showStars ? "Hide card stars" : "Show card stars"}
                 style={{
                   height: "30px",
                   padding: "0 10px",
@@ -1345,9 +1345,7 @@ export default function Workspace({
                   fontFamily: "inherit",
                   fontSize: "calc(12px * var(--app-ui-font-scale, 1.125))",
                 }}
-              >
-                Stars
-              </button>
+              />
             )}
 
             {visibleToolbarActionCount > 3 && (
@@ -1714,10 +1712,10 @@ export default function Workspace({
                   </button>
                 )}
                 {visibleToolbarActionCount < 3 && (
-                  <button
-                    type="button"
+                  <StarsToggleButton
+                    cards={cards}
+                    showStars={showStars}
                     onClick={handleStarsToolbarClick}
-                    aria-pressed={showStars}
                     style={{
                       height: "30px",
                       borderRadius: "6px",
@@ -1732,9 +1730,7 @@ export default function Workspace({
                       fontFamily: "inherit",
                       fontSize: "calc(12px * var(--app-ui-font-scale, 1.125))",
                     }}
-                  >
-                    Stars
-                  </button>
+                  />
                 )}
                 {visibleToolbarActionCount < 1 && (
                   <div style={{ display: "grid", gap: "8px" }}>

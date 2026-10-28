@@ -43,6 +43,10 @@ export function installImportedImages(bundle: ImportBundle, storage: ImageStorag
           ...card,
           question: rewriteMarkdownImagePaths(card.question, pathMapping),
           answer: rewriteMarkdownImagePaths(card.answer, pathMapping),
+          answerParts: card.answerParts?.map(part => ({
+            ...part,
+            content: rewriteMarkdownImagePaths(part.content, pathMapping),
+          })),
         })),
       })),
     })),

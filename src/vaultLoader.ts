@@ -23,6 +23,7 @@ export interface CardSource {
   question: string
   answer: string
   difficulty: number
+  hasDifficultyColumn?: boolean
 }
 
 export interface VaultLoadResult extends MaterializedDecks {
@@ -323,6 +324,7 @@ export async function loadVaultSelections(
             question: card.question,
             answer: card.answer,
             difficulty: card.difficulty,
+            hasDifficultyColumn: card.hasDifficultyColumn,
           }
         }
       }

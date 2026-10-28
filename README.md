@@ -72,7 +72,9 @@ You can also use the command palette command **Open current note in Flashcard Ge
 
 ## 📝 Markdown deck format
 
-Each deck needs an H1 title, optional H2 topic headings, and one or more tables. Columns are read by position: the first contains the question, the last contains difficulty when there are at least three columns, and every column between them contributes to the answer. Column header names are arbitrary. Two-column tables contain only question and answer; difficulty defaults to `0`.
+Each deck needs an H1 title, optional H2 topic headings, and one or more tables. The first column always contains the question. A difficulty column is optional and is recognised only when the **last column's header** is `⭐`, `★`, `*`, `Sterne`, `Stars`, `Schwierigkeit`, `Difficulty`, or the existing `Rating` name. Matching ignores case, surrounding whitespace, and emoji presentation variants such as `⭐️`. All other column names are arbitrary. Numbers in answer cells never identify a difficulty column.
+
+With a recognised final difficulty column, the columns between question and difficulty form the answer. Ratings from `1` to `5` work as before; empty or invalid ratings default to `0`. Without that header, **every column after the first contributes to the answer**, including the last one. Such cards have disabled rating controls and are treated as unrated (`0`) for sorting, statistics, and filtering. Star actions never change their Markdown or add a column. Import and export preserve whether a card has a difficulty column. Both formats can appear in the same deck, including under the same topic heading.
 
 Answer columns retain their order and are combined with blank lines; empty answer cells are skipped. Questions can contain Markdown images or Obsidian wiki images such as `![[bird.webp]]`. Image-question cards display the first two answer columns with different font sizes and fit long terms to the available width. Ordinary text cards keep fixed font sizes as the card grid changes. **Card size → Font size** adjusts both types manually.
 
@@ -103,9 +105,22 @@ This is a display-only treatment: original Markdown, stored contents and exports
 | Question | Answer | ⭐ |
 | --- | --- | --- |
 | What is experience replay? | A buffer that stores transitions for later training. | 3 |
+
+## Cards without ratings
+
+| Question | Answer | Additional information |
+| --- | --- | --- |
+| What is experience replay? | A buffer that stores transitions. | Transitions are sampled for training. |
+| How many examples are in this batch? | Batch size | 5 |
+
+| Question | Answer |
+| --- | --- |
+| What is a target network? | A periodically updated network. |
 ```
 
-Use normal Markdown in both cells: paragraphs, lists, emphasis, links, images, and mathematical notation rendered by Obsidian's Markdown renderer. Escape a literal pipe inside a cell as `\|`. Use `<br>` when you need a deliberate line break inside one table cell.
+In the tables without ratings, “Additional information” and the numeric `5` remain answer content. Existing two-column tables and the older heading-based card format are also supported without ratings.
+
+Use normal Markdown in the cells: paragraphs, lists, emphasis, links, images, and mathematical notation rendered by Obsidian's Markdown renderer. Escape a literal pipe inside a cell as `\|`. Use `<br>` when you need a deliberate line break inside one table cell.
 
 - - -
 
@@ -115,7 +130,7 @@ Use normal Markdown in both cells: paragraphs, lists, emphasis, links, images, a
 
 Library is the source-aware overview of your loaded files. It renders every card, keeps topic groups visible, and lets you choose the order in which you work.
 
-When **Edit** is enabled, the edit control opens the corresponding Markdown file at the selected card in Obsidian's editor. Changes made in the editor are picked up from the vault and reflected in the cards automatically. For Markdown cards, difficulty stars can be assigned in the Library; the rating is written back to the matching final difficulty cell in the Markdown table. The final cell must exist before the plugin can save a rating.
+When **Edit** is enabled, the edit control opens the corresponding Markdown file at the selected card in Obsidian's editor. Changes made in the editor are picked up from the vault and reflected in the cards automatically. For Markdown cards with a recognised final difficulty header, difficulty stars can be assigned in the Library; the rating is written back to the matching final difficulty cell in the Markdown table. The final cell must exist before the plugin can save a rating. For decks without a difficulty column, the **Stars** toolbar button is greyed out and disabled. Hover over it or focus it with the keyboard for a short hint: name the last column `⭐`, `*`, or `Difficulty`. In mixed decks the button remains available, and cards without a difficulty column keep disabled rating controls.
 
 Image-deck cards do not support editing or stars in the plugin controls because they are generated directly from image files.
 

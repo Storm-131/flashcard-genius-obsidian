@@ -26,11 +26,21 @@ describe('ZIP import and export', () => {
     const installed = installImportedImages(bundle, storage)
     expect(installed.decks[0].topics[0].cards[0].question).toBe('![[img/Sperber-2.webp|300x200]]')
     const imported = await importDeckZip(await createDeckZip(installed.decks, storage))
-    // The existing export writes a single merged answer column. Column metadata
-    // is derived on import; the persisted Markdown and answer must stay intact.
+    // Preserve the answer column metadata along with the Markdown contents.
     expect(imported.decks.map(serializeDeckMarkdown)).toEqual(installed.decks.map(serializeDeckMarkdown))
     expect(imported.decks[0].topics[0].cards[0].answer).toBe(installed.decks[0].topics[0].cards[0].answer)
     expect(imported.images.map(image => image.path)).toEqual(['img/Sperber-2.webp'])
+  })
+
+  it('preserves rating-free answer columns and images through ZIP import and export', async () => {
+    const document = parseDeckMarkdown('# Deck\n| Q | A | Details |\n| --- | --- | --- |\n| Question | ![Map](img/map.png) | 5 |', 'Deck.md')
+    const storage = new InMemoryImageStorage()
+    storage.store(new Blob(['existing']), 'map.png')
+    const installed = installImportedImages({ decks: [document], images: [{ path: 'img/map.png', blob: new Blob(['map'], { type: 'image/png' }) }] }, storage)
+    expect(installed.decks[0].topics[0].cards[0].answerParts?.[0].content).toBe('![Map](img/map-2.png)')
+    const imported = await importDeckZip(await createDeckZip(installed.decks, storage))
+    expect(imported.decks[0].topics[0].cards).toEqual(installed.decks[0].topics[0].cards)
+    expect(imported.images.map(image => image.path)).toEqual(['img/map-2.png'])
   })
 
   it('validates missing images in the question column too', () => {

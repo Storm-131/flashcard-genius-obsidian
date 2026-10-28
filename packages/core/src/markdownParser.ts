@@ -25,7 +25,7 @@ function parseLegacyTopics(lines: string[]): DeckDocumentTopic[] {
   const finishCard = () => {
     if (currentQuestion === null) return
     const answer = answerLines.join('\n').trim()
-    if (currentQuestion.trim() && answer) ensureTopic().cards.push({ question: currentQuestion.trim(), answer, difficulty: 0 })
+    if (currentQuestion.trim() && answer) ensureTopic().cards.push({ question: currentQuestion.trim(), answer, difficulty: 0, hasDifficultyColumn: false })
     currentQuestion = null
     answerLines = []
   }
@@ -89,7 +89,7 @@ export function parseDeckMarkdown(markdown: string, sourceFileName?: string): De
     }
     index += 2
     while (index < lines.length && lines[index].trim().startsWith('|')) {
-      const card = parseTableCard(lines[index], header.length)
+      const card = parseTableCard(lines[index], header)
       if (card) {
         if (!card.question) problems.push('A card has no question.')
         if (!card.answer) problems.push(`The card "${card.question || 'Untitled'}" has no answer.`)

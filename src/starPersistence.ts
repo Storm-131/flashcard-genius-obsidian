@@ -1,7 +1,7 @@
 import type { App } from 'obsidian'
 import { TFile } from 'obsidian'
 import { parseDeckMarkdown } from '@flashcard-genius/core'
-import { isTableDivider, parseTableCard, tableCells } from '@flashcard-genius/core/markdownTable'
+import { hasDifficultyColumn, isTableDivider, parseTableCard, tableCells } from '@flashcard-genius/core/markdownTable'
 import type { CardSource } from './vaultLoader'
 
 export class StarPersistenceError extends Error {}
@@ -28,16 +28,15 @@ function updateDifficultyInMarkdown(markdown: string, source: CardSource, diffic
   for (let index = 0; index < lines.length; index += 1) {
     if (!lines[index].trim().startsWith('|') || !isTableDivider(lines[index + 1] ?? '')) continue
 
-    const columnCount = tableCells(lines[index]).length
-    const hasDifficultyColumn = columnCount >= 3
+    const header = tableCells(lines[index])
     index += 2
 
     while (index < lines.length && lines[index].trim().startsWith('|')) {
-      const card = parseTableCard(lines[index], columnCount)
+      const card = parseTableCard(lines[index], header)
       if (card?.question && card.answer) {
         if (cardIndex === source.cardIndex) {
-          if (!hasDifficultyColumn || tableCells(lines[index]).length < columnCount) {
-            throw new StarPersistenceError('This card table has no final difficulty cell. Add the missing column or cell in Obsidian first.')
+          if (!hasDifficultyColumn(header) || tableCells(lines[index]).length < header.length) {
+            throw new StarPersistenceError('This card table has no writable final difficulty cell.')
           }
           lines[index] = replaceDifficultyCell(lines[index], difficulty)
           return lines.join(newline)
@@ -58,6 +57,9 @@ export async function persistCardDifficulty(
   expectedContent: string,
   difficulty: number,
 ): Promise<string> {
+  if (source.hasDifficultyColumn === false) {
+    throw new StarPersistenceError('Ratings are disabled for cards without a difficulty column.')
+  }
   if (!Number.isInteger(difficulty) || difficulty < 1 || difficulty > 5) {
     throw new StarPersistenceError('The difficulty must be a number from 1 to 5.')
   }
@@ -72,6 +74,9 @@ export async function persistCardDifficulty(
 
   const cards = flattenDocumentCards(currentContent, abstractFile.name)
   const currentCard = cards[source.cardIndex]
+  if (currentCard?.hasDifficultyColumn === false) {
+    throw new StarPersistenceError('Ratings are disabled for cards without a difficulty column.')
+  }
   if (
     !currentCard
     || currentCard.question !== source.question

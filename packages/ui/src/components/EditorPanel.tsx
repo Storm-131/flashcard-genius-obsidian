@@ -561,6 +561,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <DifficultyStars
               value={difficulty}
+              readOnly={card.hasDifficultyColumn === false}
               onChange={value => {
                 setDifficulty(value)
                 draftRef.current.difficulty = value
@@ -570,7 +571,7 @@ export default function EditorPanel({ card, onSave, onDelete, collapsed, onToggl
             <button
               type="button"
               onClick={() => { setDifficulty(0); draftRef.current.difficulty = 0; dirtyRef.current = true }}
-              disabled={difficulty === 0}
+              disabled={card.hasDifficultyColumn === false || difficulty === 0}
               style={{ height: '26px', padding: '0 8px', borderRadius: '5px', border: '1px solid #E2DED4', background: 'transparent', color: difficulty === 0 ? '#C8C4B8' : '#6B6560', cursor: difficulty === 0 ? 'not-allowed' : 'pointer', fontSize: 'calc(11px * var(--app-ui-font-scale, 1.125))', fontFamily: 'inherit' }}
             >
               Clear stars

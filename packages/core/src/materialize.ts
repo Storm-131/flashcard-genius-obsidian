@@ -82,6 +82,7 @@ export function materializeDeckDocuments(
           imageAsQuestion: false,
           tags: [],
           difficulty: documentCard.difficulty,
+          hasDifficultyColumn: documentCard.hasDifficultyColumn,
         }
         cards.push(card)
         cardOrderByDeck[deckId].push(card.id)

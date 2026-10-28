@@ -1,5 +1,15 @@
 import type { Card, Deck, DeckTopic } from '../types'
-import type { DeckDocument } from './types'
+import type { DeckDocument, DeckDocumentCard } from './types'
+
+function buildDocumentCard(card: Card): DeckDocumentCard {
+  return {
+    question: card.question,
+    answer: card.answer,
+    difficulty: card.hasDifficultyColumn === false ? 0 : card.difficulty ?? 0,
+    hasDifficultyColumn: card.hasDifficultyColumn,
+    answerParts: card.answerParts,
+  }
+}
 
 export function sanitizeFileName(value: string, extension = ''): string {
   const normalized = value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
@@ -27,12 +37,12 @@ export function buildDeckDocument(
       name: topic.name,
       cards: deckCards
         .filter(card => card.topicId === topic.id)
-        .map(card => ({ question: card.question, answer: card.answer, difficulty: card.difficulty ?? 0 })),
+        .map(buildDocumentCard),
     }))
     .filter(topic => topic.cards.length > 0)
   const unassignedCards = deckCards
     .filter(card => !card.topicId || !knownTopicIds.has(card.topicId))
-    .map(card => ({ question: card.question, answer: card.answer, difficulty: card.difficulty ?? 0 }))
+    .map(buildDocumentCard)
 
   if (unassignedCards.length > 0) documentTopics.push({ name: 'General', cards: unassignedCards })
 
@@ -45,15 +55,35 @@ export function buildDeckDocument(
 
 export function serializeDeckMarkdown(document: DeckDocument): string {
   const lines: string[] = [`# ${document.title.trim()}`]
+  const escapeCell = (value: string) => value.replace(/\r?\n/g, '<br>').replace(/\|/g, '\\|').trim()
 
   for (const topic of document.topics) {
     lines.push(`## ${topic.name.trim() || 'General'}`)
-    lines.push('| Question | Answer | ⭐️ |', '| :--- | :--- | :--- |')
+    let previousSchema = ''
     for (const card of topic.cards) {
-      const question = card.question.replace(/\r?\n/g, '<br>').replace(/\|/g, '\\|').trim()
-      const answer = card.answer.replace(/\r?\n/g, '<br>').replace(/\|/g, '\\|').trim()
+      // An edited answer may have replaced the original column contents.
+      const parts = card.answerParts?.map(part => part.content).join('\n\n') === card.answer
+        ? card.answerParts : undefined
+      const answerCount = Math.max(1, ...(parts ?? []).map(part => part.columnIndex + 1))
+      const answers = Array<string>(answerCount).fill('')
+      if (parts) {
+        for (const part of parts) answers[part.columnIndex] = part.content
+      } else {
+        answers[0] = card.answer
+      }
+      const hasDifficulty = card.hasDifficultyColumn !== false
+      const schema = `${answerCount}:${hasDifficulty}`
+      if (schema !== previousSchema) {
+        if (previousSchema) lines.push('')
+        const header = ['Question', ...answers.map((_, index) => index === 0 ? 'Answer' : `Answer ${index + 1}`)]
+        if (hasDifficulty) header.push('⭐️')
+        lines.push(`| ${header.join(' | ')} |`, `| ${header.map(() => ':---').join(' | ')} |`)
+        previousSchema = schema
+      }
       const difficulty = Number.isInteger(card.difficulty) && card.difficulty >= 0 && card.difficulty <= 5 ? card.difficulty : 0
-      lines.push(`| ${question} | ${answer} | ${difficulty} |`)
+      const cells = [card.question, ...answers].map(escapeCell)
+      if (hasDifficulty) cells.push(String(difficulty))
+      lines.push(`| ${cells.join(' | ')} |`)
     }
   }
 

@@ -67,18 +67,30 @@ export function unescapeTableCell(value: string): string {
     .trim()
 }
 
+// Match only an explicit final header, never the contents of a card row.
+export function hasDifficultyColumn(header: readonly TableCell[]): boolean {
+  if (header.length < 3) return false
+  const name = header[header.length - 1].value
+    .replace(/[\uFE0E\uFE0F]/g, "")
+    .trim()
+    .toLowerCase()
+  return ["⭐", "★", "*", "sterne", "stars", "schwierigkeit", "difficulty", "rating"].includes(name)
+}
+
 export function parseTableCard(
   line: string,
-  columnCount: number,
+  header: readonly TableCell[],
 ): DeckDocumentCard | null {
   const cells = tableCells(line).map((cell) => cell.value)
   if (cells.every((cell) => !unescapeTableCell(cell))) return null
 
-  const hasDifficulty = columnCount >= 3
+  const columnCount = header.length
+  const hasDifficulty = hasDifficultyColumn(header)
+  const answerColumnCount = columnCount - 1 - Number(hasDifficulty)
   const hasDifficultyCell = hasDifficulty && cells.length >= columnCount
   const answerCells = cells.slice(1, hasDifficultyCell ? -1 : undefined)
   // Older single-answer tables allowed unescaped pipes in answer text.
-  const answers = columnCount <= 3 ? [answerCells.join("|")] : answerCells
+  const answers = answerColumnCount === 1 ? [answerCells.join("|")] : answerCells
   const rating = hasDifficultyCell
     ? Number(unescapeTableCell(cells[cells.length - 1]))
     : 0
@@ -92,11 +104,12 @@ export function parseTableCard(
   const card: DeckDocumentCard = {
     question,
     answer: answerParts.map((part) => part.content).join("\n\n"),
+    hasDifficultyColumn: hasDifficulty,
     difficulty:
       Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : 0,
   }
   if (
-    columnCount > 3 ||
+    answerColumnCount > 1 ||
     /!\[\[[^\]]+\]\]|!\[[^\]]*\]\([^)]+\)/.test(question)
   ) {
     card.answerParts = answerParts

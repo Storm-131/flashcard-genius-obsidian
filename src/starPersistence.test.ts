@@ -37,6 +37,9 @@ describe('positional difficulty persistence', () => {
 
   it.each([
     '# Deck\n| Q | A |\n| --- | --- |\n| Question | Answer |',
+    '# Deck\n| Q | A | Detail |\n| --- | --- | --- |\n| Question | Answer | Important |',
+    '# Deck\n| Q | A | Number |\n| --- | --- | --- |\n| Question | Answer | 5 |',
+    '# Deck\n| Q | A | Detail | More |\n| --- | --- | --- | --- |\n| Question | Answer | More text | 3 |',
     '# Deck\n| Q | A | Rating |\n| --- | --- | --- |\n| Question | Answer |',
   ])('does not overwrite an answer when the difficulty cell is absent', async markdown => {
     const { app, source, modify } = createVault(markdown)
@@ -44,8 +47,33 @@ describe('positional difficulty persistence', () => {
     expect(modify).not.toHaveBeenCalled()
   })
 
+  it('checks the actual header even if an older source has no capability metadata', async () => {
+    const markdown = '# Deck\n| Q | A | Notes |\n| --- | --- | --- |\n| Question | Answer | 5 |'
+    const { app, source, modify } = createVault(markdown)
+    delete source.hasDifficultyColumn
+    await expect(persistCardDifficulty(app, source, markdown, 3)).rejects.toBeInstanceOf(StarPersistenceError)
+    expect(modify).not.toHaveBeenCalled()
+  })
+
+  it('updates only the rated card in mixed tables under the same topic', async () => {
+    const markdown = '# Deck\n| Q | A | Notes |\n| --- | --- | --- |\n| One | Answer | 5 |\n\n| Q | A | Stars |\n| --- | --- | --- |\n| Two | Answer | 2 |\n\n| Q | A |\n| --- | --- |\n| Three | Answer |'
+    const { app, modify } = createVault(markdown)
+    const source = { filePath: 'birds.md', cardIndex: 1, ...parseDeckMarkdown(markdown).topics[0].cards[1] }
+    const updated = await persistCardDifficulty(app, source, markdown, 4)
+    expect(updated).toBe(markdown.replace('| Two | Answer | 2 |', '| Two | Answer | 4 |'))
+    expect(modify).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['⭐', '⭐️', '★', '*', 'Sterne', 'Stars', 'Schwierigkeit', 'Difficulty', 'Rating'])(
+    'persists ratings for the recognised header %s', async header => {
+      const markdown = `# Deck\n| Q | A | ${header} |\n| --- | --- | --- |\n| Question | Answer | 1 |`
+      const { app, source } = createVault(markdown)
+      await expect(persistCardDifficulty(app, source, markdown, 5)).resolves.toBe(markdown.replace('| 1 |', '| 5 |'))
+    },
+  )
+
   it('refuses to overwrite externally changed Markdown', async () => {
-    const markdown = '# Deck\n| Q | A | R |\n| --- | --- | --- |\n| Question | Answer | 1 |'
+    const markdown = '# Deck\n| Q | A | Stars |\n| --- | --- | --- |\n| Question | Answer | 1 |'
     const { app, source, modify } = createVault(markdown)
     await expect(persistCardDifficulty(app, source, `${markdown}\n`, 3)).rejects.toBeInstanceOf(StarConflictError)
     expect(modify).not.toHaveBeenCalled()

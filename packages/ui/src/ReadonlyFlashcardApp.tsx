@@ -159,7 +159,7 @@ export default function ReadonlyFlashcardApp({
 
   const handleDifficultyChange = async (cardId: string, difficulty: number) => {
     const card = cardList.find(item => item.id === cardId)
-    if (!card) return
+    if (!card || card.hasDifficultyColumn === false) return
     if (onPersistDifficulty) {
       try {
         await onPersistDifficulty(card, difficulty)

@@ -8,6 +8,8 @@ export interface DeckDocumentCard {
   question: string
   answer: string
   difficulty: number
+  /** False disables ratings for sources without a final difficulty header. Omitted on older in-memory cards. */
+  hasDifficultyColumn?: boolean
   answerParts?: CardAnswerPart[]
 }
 
