@@ -21,13 +21,13 @@ Flashcard Genius is an independent community plugin and is not affiliated with o
 
 ### Library
 
-The Library shows all cards in a deck, grouped by topic. Enable **Edit** to reveal the source buttons and jump directly to the selected card in Obsidian's Markdown editor.
+The Library shows all cards in a deck, grouped by topic. Click a card to select it. **Edit** opens its Markdown source in an adjacent pane, keeping the plugin and note visible together.
 
 ![Library view](docs/Flashcards.png)
 
 ### Study mode
 
-Study mode shows the question first. Click a card to reveal its answer. Image decks display the image on the front and the image title with a mirrored, subdued image on the back.
+Study mode shows the question first. Click a card to select and flip it; click again or press **Space** to flip the selected card back. Image questions stay on the front; the back contains the answer text without repeating the question image.
 
 ![Study mode](docs/Image_Quiz.png)
 
@@ -76,19 +76,15 @@ Each deck needs an H1 title, optional H2 topic headings, and one or more tables.
 
 With a recognised final difficulty column, the columns between question and difficulty form the answer. Ratings from `1` to `5` work as before; empty or invalid ratings default to `0`. Without that header, **every column after the first contributes to the answer**, including the last one. Such cards have disabled rating controls and are treated as unrated (`0`) for sorting, statistics, and filtering. Star actions never change their Markdown or add a column. Import and export preserve whether a card has a difficulty column. Both formats can appear in the same deck, including under the same topic heading.
 
-Answer columns retain their order and are combined with blank lines; empty answer cells are skipped. Questions can contain Markdown images or Obsidian wiki images such as `![[bird.webp]]`. Image-question cards display the first two answer columns with different font sizes and fit long terms to the available width. Ordinary text cards keep fixed font sizes as the card grid changes. **Card size → Font size** adjusts both types manually.
+Answer columns retain their order and are combined with blank lines; empty answer cells are skipped. Questions can contain Markdown images or Obsidian wiki images such as `![[bird.webp]]`. **Card size → Font size** adjusts answer text using the same manual scale for text and image cards.
 
-On **image-card backs in Study mode**, the original answer-column positions determine the visual hierarchy:
+Answers in Library and Study use the same compact `CardAnswer` renderer for image and text cards. Each original non-empty answer column remains a separate part: a stronger theme-coloured divider follows the first part, with slightly thicker, more visible secondary dividers between later parts. Divider weights and responsive gaps come from shared CSS tokens. Spacing around dividers and Markdown paragraphs is compact. Paragraphs, line breaks, italics and formulas inside a column remain intact and never create extra dividers. Image answers use one fitted primary font: each following column uses 75% of the actual rendered size of the previous column. Text-card answers use 75% of the fitted question font. The manual font control is applied once, before fitting; widening a text card does not increase its preferred font size. Study backs do not repeat the front image. Front images fill their available frame as far as their aspect ratio permits, including upscaling small images, while retaining the existing card proportions and height limits without cropping or distortion.
 
-| Frage | Deutscher Name | Lateinischer Name | Zusatzinfo | Sterne |
-| --- | --- | --- | --- | --- |
-| ![[Blauer-Drache.webp]] | Blauer Drache (Blaue Fadenschnecke) | *Glaucus atlanticus* | Kann Nesselzellen gefressener Quallen speichern und zur eigenen Verteidigung nutzen. | 3 |
+Only Library image-card answers use a two-stage layout. The first non-empty answer column fills the remaining initial viewport; all later columns start completely below its visible edge. Selecting the card enables scrolling through the same single content viewport to reach them. Selection changes, resizing/resetting the card and reopening the view start at the top. A single answer column does not create an artificial extra scroll area. Study keeps its usual reveal and scrolling behavior. The **Edit** toolbar button is available in both Library and Study and opens the source Markdown beside the plugin view.
 
-The first answer column is the large primary answer; the second is the smaller secondary answer. Both names form a compact, vertically centered block. A trailing parenthetical addition in a simple primary name can appear on its own line, for example `Blauer Drache` followed by `(Blaue Fadenschnecke)`. Names wrap between complete words; long words shrink to fit without arbitrary word breaks. The secondary name starts at 75% of the fitted primary font size and can shrink further if needed. Italic Markdown in the Latin name remains italic.
+Text questions wrap between words and shrink to fit the available width and height in Library and Study. Automatic fitting stops at 10 px (or a smaller size explicitly chosen with the font control). Extremely long questions or unbreakable words can exceed this readable limit: an explicit **Read full question** button opens the complete Markdown question in a dialog, instead of silently hiding the rest or adding question-side scrolling. Essay-like image answers retain natural scrolling rather than shrinking whole paragraphs to an unreadable size.
 
-Further answer columns appear below the names as small descriptions, initially around 40% of the primary font size and capped to grow moderately on large cards. All additional columns start below the first visible card viewport and appear only when scrolling the single answer area, using touch, the mouse or the keyboard. Revealing a card always resets this area to the top; cards without additional information have no unnecessary scrolling. Empty columns never move later columns into a different role.
-
-This is a display-only treatment: original Markdown, stored contents and exports remain unchanged. The positional import syntax above is unchanged. The Library view and ordinary text cards retain their existing layout, sizes and scrolling behavior.
+For example, `| ![[Blauer-Drache.webp]] | Blauer Drache | *Glaucus atlanticus* | Meeresschnecke | 3 |` under the headers `Frage`, `Deutsch`, `Latein`, `Zusatzinfo`, `Sterne` displays “Blauer Drache”, a divider, then “Glaucus atlanticus”, a thinner divider, and “Meeresschnecke”. The star value remains separate from the answer. Source Markdown and stored column data are unchanged.
 
 ```markdown
 # Neural Networks 💡
@@ -130,13 +126,21 @@ Use normal Markdown in the cells: paragraphs, lists, emphasis, links, images, an
 
 Library is the source-aware overview of your loaded files. It renders every card, keeps topic groups visible, and lets you choose the order in which you work.
 
-When **Edit** is enabled, the edit control opens the corresponding Markdown file at the selected card in Obsidian's editor. Changes made in the editor are picked up from the vault and reflected in the cards automatically. For Markdown cards with a recognised final difficulty header, difficulty stars can be assigned in the Library; the rating is written back to the matching final difficulty cell in the Markdown table. The final cell must exist before the plugin can save a rating. For decks without a difficulty column, the **Stars** toolbar button is greyed out and disabled. Hover over it or focus it with the keyboard for a short hint: name the last column `⭐`, `*`, or `Difficulty`. In mixed decks the button remains available, and cards without a difficulty column keep disabled rating controls.
+Click a Library card or a question in the left Finder to select it. A Study-card click selects and flips that card; repeated clicks flip it back and forth. The single selected card and Finder entry share a subtle highlight in the current theme. Selection stays synchronised between Finder, Library and Study. Arrow navigation and Finder selection preserve revealed answers independently. Image zoom and rating buttons never flip the card.
+
+**Edit** is a direct action: it opens the selected card's original Markdown note beside the plugin. A sibling Markdown pane is reused when available; otherwise the Workspace API creates a vertical split next to the plugin's own pane. The plugin stays visible, and other tabs in its pane are never used as the target. Without a selected card, it uses the current deck's source only when that source is unambiguous. If several files are possible, select a card first. The button has no active state or separate Edit mode, and cards have no edit icon. Library card clicks continue to select cards. Vault changes reload automatically.
+
+For Markdown cards with a recognised final difficulty header, difficulty stars are written back to the matching final difficulty cell, which must exist. For decks without a difficulty column, the **Stars** toolbar button is greyed out and disabled. Hover over it or focus it with the keyboard for a short hint: name the last column `⭐`, `*`, or `Difficulty`. In mixed decks the button remains available, and cards without a difficulty column keep disabled rating controls.
 
 Image-deck cards do not support editing or stars in the plugin controls because they are generated directly from image files.
 
 ### Study mode
 
-Study mode presents the front/question first. Click the card to flip it and reveal the answer. The toolbar lets you choose the number of cards per row and card height. The layout also adapts automatically to the available window width, including narrow iPhone and iPad layouts.
+Study mode presents the front/question first. Click a card to select and flip it. Click the same card again, or press **Space**, to flip it back. The flip transition is shorter (0.38 seconds), and reduced-motion preferences disable it. The toolbar lets you choose the number of cards per row and card height. The layout also adapts automatically to the available window width, including narrow iPhone and iPad layouts.
+
+Only the selected card scrolls internally when its content is long. Wheel, trackpad and touch gestures over other cards scroll the surrounding card grid. Changing selection resets internal scroll positions; this does not change which answers are revealed.
+
+With a card selected, **Left/Right** select the previous/next displayed card. **Up/Down** move between grid rows using the current column count, filters and sort order. In Study, **1–5** assign the selected card's difficulty through the existing star persistence; cards without a writable rating column cannot save ratings. Space has no action in Library. Shortcuts apply only inside the Flashcard Genius view and are ignored in inputs, editors and dialogs.
 
 ### Stats mode
 

@@ -12,6 +12,7 @@ interface Props {
   cardCounts: Record<string, number>
   mode: AppMode
   selectedDeckId: string | null
+  selectedCardId?: string | null
   selectedStudyTopicId: string | null | undefined
   onSelectDeck: (id: string | null) => void
   onSelectTopic: (deckId: string, topicId: string | null) => void
@@ -102,6 +103,7 @@ export default function Sidebar({
   cardCounts,
   mode,
   selectedDeckId,
+  selectedCardId,
   selectedStudyTopicId,
   onSelectDeck,
   onSelectTopic,
@@ -141,6 +143,25 @@ export default function Sidebar({
   const resizingRef = useRef(false)
   const manuallyResizedRef = useRef(false)
   const resizeStartRef = useRef({ x: 0, width: 224 })
+
+  useEffect(() => {
+    const card = cards.find(item => item.id === selectedCardId)
+    const deck = decks.find(item => item.id === card?.deckId)
+    if (!card || !deck) return
+    if (deck.categoryId) setCollapsedCats(current => new Set([...current].filter(id => id !== deck.categoryId)))
+    else setUncategorizedCollapsed(false)
+    setExpandedDeckIds(current => new Set([...current, deck.id]))
+    setCollapsedTopics(current => new Set([...current].filter(id => id !== (card.topicId ?? `${deck.id}:unassigned`))))
+  }, [selectedCardId, cards, decks])
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const selected = Array.from(sidebarRef.current?.querySelectorAll<HTMLElement>('[data-sidebar-card-id]') ?? [])
+        .find(element => element.dataset.sidebarCardId === selectedCardId)
+      selected?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [selectedCardId, isOpen, expandedDeckIds, collapsedCats, collapsedTopics, uncategorizedCollapsed])
 
   const maxSidebarWidth = Math.max(164, Math.floor(availableWidth / 3))
   const visibleDecksForSizing = useMemo(() => decks.filter(deck => {
@@ -285,7 +306,9 @@ export default function Sidebar({
           {previewPosition && <span style={{ position: 'absolute', left: '2px', right: '2px', [previewPosition === 'before' ? 'top' : 'bottom']: '-1px', height: '2px', background: 'var(--app-accent, #4F46E5)', borderRadius: '2px', pointerEvents: 'none', zIndex: 2 }} />}
           <button
             type="button"
-            className="sidebar-card-preview"
+            className={`sidebar-card-preview${selectedCardId === card.id ? " is-card-selected" : ""}`}
+            data-sidebar-card-id={card.id}
+            aria-current={selectedCardId === card.id ? "true" : undefined}
             draggable={!immutable}
             onDragStart={event => {
               setDraggedCardId(card.id)

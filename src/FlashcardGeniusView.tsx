@@ -1,9 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { Component, ItemView, MarkdownRenderer, MarkdownView, Notice, TFile, type App, type EditorPosition, type TAbstractFile, type WorkspaceLeaf } from 'obsidian'
+import { Component, ItemView, MarkdownRenderer, Notice, TFile, type App, type TAbstractFile, type WorkspaceLeaf } from 'obsidian'
 import type { Card } from '@flashcard-genius/core'
 import { ImageAssetsProvider, ReadonlyFlashcardApp, type MarkdownRenderContext } from '@flashcard-genius/ui'
 import { VaultImageResolver } from './VaultImageResolver'
+import { openMarkdownSourceBesidePlugin } from './cardSource'
 import { persistCardDifficulty, StarConflictError } from './starPersistence'
 import {
   createEmptyVaultLoadResult,
@@ -19,57 +20,13 @@ interface ContentProps {
   error: string | null
   loading: boolean
   onPersistDifficulty: (card: Card, difficulty: number) => Promise<void>
-  onOpenCardSource: (card: Card) => void
+  onOpenMarkdownSource: (filePath: string) => void
   onClearDecksFromView: () => void
   markdownContext: MarkdownRenderContext
   cardSourcePaths: Record<string, string>
 }
 
-function splitTableRow(line: string): string[] {
-  const cells: string[] = []
-  let current = ''
-  const normalized = line.trim().replace(/^\||\|$/g, '')
-  for (let index = 0; index < normalized.length; index += 1) {
-    if (normalized[index] === '\\' && normalized[index + 1] === '|') {
-      current += '\\|'
-      index += 1
-    } else if (normalized[index] === '|') {
-      cells.push(current.trim())
-      current = ''
-    } else {
-      current += normalized[index]
-    }
-  }
-  cells.push(current.trim())
-  return cells
-}
-
-function isTableDivider(line: string): boolean {
-  return /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(line)
-}
-
-function findQuestionLine(markdown: string, question: string, cardIndex: number): number {
-  const normalizedQuestion = question.trim().replace(/\\\|/g, '|')
-  const lines = markdown.split(/\r?\n/)
-  let parsedCardIndex = 0
-
-  for (let index = 0; index < lines.length - 1; index += 1) {
-    if (!lines[index].trim().startsWith('|') || !isTableDivider(lines[index + 1])) continue
-    index += 2
-    while (index < lines.length && lines[index].trim().startsWith('|')) {
-      const rawQuestion = splitTableRow(lines[index])[0]?.replace(/\\\|/g, '|').trim() ?? ''
-      if (parsedCardIndex === cardIndex && rawQuestion === normalizedQuestion) return index
-      parsedCardIndex += 1
-      index += 1
-    }
-    index -= 1
-  }
-
-  const fallbackIndex = lines.findIndex(line => line.replace(/\\\|/g, '|').includes(normalizedQuestion))
-  return fallbackIndex >= 0 ? fallbackIndex : 0
-}
-
-function ViewContent({ data, error, loading, onPersistDifficulty, onOpenCardSource, onClearDecksFromView, markdownContext, cardSourcePaths }: ContentProps) {
+function ViewContent({ data, error, loading, onPersistDifficulty, onOpenMarkdownSource, onClearDecksFromView, markdownContext, cardSourcePaths }: ContentProps) {
   if (loading && data.cards.length === 0) {
     return <div className="flashcard-genius-root flashcard-genius-view-message">Loading flashcards…</div>
   }
@@ -86,7 +43,7 @@ function ViewContent({ data, error, loading, onPersistDifficulty, onOpenCardSour
         cards={data.cards}
         cardOrderByDeck={data.cardOrderByDeck}
         onPersistDifficulty={onPersistDifficulty}
-        onOpenCardSource={onOpenCardSource}
+        onOpenMarkdownSource={onOpenMarkdownSource}
         cardSourceKeys={Object.fromEntries(Object.entries(data.cardSources).map(([cardId, source]) => [cardId, `${source.cardIndex}:${source.question}`]))}
         cardSourcePaths={cardSourcePaths}
         markdownContext={markdownContext}
@@ -109,7 +66,6 @@ export class FlashcardGeniusView extends ItemView {
   private error: string | null = null
   private loading = false
   private initialized = false
-  private sourceLeaf: WorkspaceLeaf | null = null
   private modifyTimers = new Map<string, number>()
   private ownWriteTimers = new Map<string, number>()
   private ownWritePaths = new Set<string>()
@@ -370,33 +326,11 @@ export class FlashcardGeniusView extends ItemView {
     this.render()
   }
 
-  private async openCardSource(card: Card): Promise<void> {
-    const source = this.data.cardSources[card.id]
-    if (!source) return
-
-    const file = this.obsidianApp.vault.getAbstractFileByPath(source.filePath)
-    if (!(file instanceof TFile)) {
-      new Notice('The Markdown source for this card could not be found.')
-      return
-    }
-
+  private async openMarkdownSource(filePath: string): Promise<void> {
     try {
-      if (!this.sourceLeaf) {
-        this.sourceLeaf = this.app.workspace.createLeafBySplit(this.leaf, 'vertical', true)
-      }
-      await this.sourceLeaf.openFile(file)
-      await this.app.workspace.revealLeaf(this.sourceLeaf)
-
-      if (!(this.sourceLeaf.view instanceof MarkdownView)) return
-      const markdown = await this.obsidianApp.vault.cachedRead(file)
-      const line = findQuestionLine(markdown, source.question, source.cardIndex)
-      const position: EditorPosition = { line, ch: 0 }
-      const lineEnd: EditorPosition = { line, ch: markdown.split(/\r?\n/)[line]?.length ?? 0 }
-      this.sourceLeaf.view.editor.setSelection(position, lineEnd)
-      this.sourceLeaf.view.editor.scrollIntoView({ from: position, to: lineEnd }, true)
-      this.sourceLeaf.view.editor.focus()
-    } catch {
-      new Notice('The Markdown source could not be opened.')
+      await openMarkdownSourceBesidePlugin(this.obsidianApp, this.leaf, filePath)
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : 'The Markdown source could not be opened.')
     }
   }
 
@@ -435,7 +369,7 @@ export class FlashcardGeniusView extends ItemView {
           error={this.error}
           loading={this.loading}
           onPersistDifficulty={(card, difficulty) => this.persistDifficulty(card, difficulty)}
-          onOpenCardSource={card => { void this.openCardSource(card) }}
+          onOpenMarkdownSource={filePath => { void this.openMarkdownSource(filePath) }}
           onClearDecksFromView={() => { void this.showEmpty() }}
           markdownContext={{
             app: this.obsidianApp,

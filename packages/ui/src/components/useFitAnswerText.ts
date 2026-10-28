@@ -1,284 +1,107 @@
-import { useEffect, useLayoutEffect, useRef } from "react"
-import { setCssProps } from "../domStyles"
+import { useEffect, useRef, useState } from 'react'
+import { setCssProps } from '../domStyles'
 
-// Study names wrap only between words. Fit the primary first, then derive
-// the secondary font from its actual size before fitting the secondary itself.
-// The existing per-column fitter below remains unchanged for the Library.
-export function useFitStudyAnswerText(content: string, enabled: boolean, fontScale: number, visible = false) {
+type FitKind = 'question' | 'image-answer'
+
+// Measure the rendered Markdown, including asynchronous native rendering and
+// font loading. A single pixel font is the reference; derived sizes never apply
+// the manual scale a second time.
+export default function useFitAnswerText(content: string, enabled: boolean, fontScale: number, kind: FitKind = 'image-answer') {
   const ref = useRef<HTMLDivElement>(null)
-  useLayoutEffect(() => {
-    if (enabled && visible && ref.current) ref.current.scrollTop = 0
-  }, [enabled, visible])
+  const [overflow, setOverflow] = useState(false)
+
   useEffect(() => {
-    const element = ref.current
-    if (!element || !enabled) return
-    const names = element.querySelector<HTMLElement>(".study-answer-name-content")
-    if (!names) return
+    const root = ref.current
+    if (!root || !enabled) return
+    const property = kind === 'question' ? '--card-question-font-size' : '--image-primary-font-size'
+    const viewport = root.closest<HTMLElement>('.card-content-viewport')
+    const card = root.closest<HTMLElement>('.workspace-card, .flip-card') ?? root
     let frame = 0
     let disposed = false
-    const updateScrollHint = () => {
-      const moreBelow = element.scrollHeight - element.clientHeight - element.scrollTop > 2
-      element.dataset.moreBelow = String(moreBelow)
-      element.parentElement?.classList.toggle("has-more-answer-content", moreBelow)
-    }
+    let viewportSize = ''
+
     const fit = () => {
       frame = 0
-      const parts = Array.from(names.querySelectorAll<HTMLElement>(".card-answer-part"))
-      const height = element.clientHeight
-      if (!(element.clientWidth > 0 && height > 0)) return
-      element.style.removeProperty("--study-secondary-font")
-      for (const part of parts) setCssProps(part, { "--answer-fit-scale": "1" })
-      const primary = parts.find((part) => (part.dataset.columnIndex ?? "0") === "0")
-      const secondary = parts.find((part) => part.dataset.columnIndex === "1")
-      const fitWidth = (part: HTMLElement) => {
-        let lower = 0
-        let upper = 1
-        if (part.scrollWidth <= part.clientWidth) return 1
-        // Words remain intact. No fixed minimum may force an overflowing word.
-        for (let iteration = 0; iteration < 14; iteration++) {
-          const scale = (lower + upper) / 2
-          setCssProps(part, { "--answer-fit-scale": String(scale) })
-          if (part.scrollWidth <= part.clientWidth) lower = scale
-          else upper = scale
+      const targets = Array.from(root.querySelectorAll<HTMLElement>(kind === 'question' ? '[data-fit-question]' : '.card-answer-part'))
+      if (!targets.length || !targets[0].textContent?.trim()) return
+      let heightLimit = Infinity
+      if (kind === 'question') {
+        for (const target of targets) {
+          const slot = target.closest<HTMLElement>('.card-heading, .card-content-viewport')
+          if (!slot) continue
+          const style = getComputedStyle(slot)
+          const maximum = parseFloat(style.maxHeight)
+          const available = Number.isFinite(maximum) ? maximum : slot.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - 4
+          if (available > 0) heightLimit = Math.min(heightLimit, available)
         }
-        setCssProps(part, { "--answer-fit-scale": String(lower) })
-        return lower
+        if (Number.isFinite(heightLimit)) setCssProps(root, { '--card-question-height': `${heightLimit}px` })
+      } else if (root.classList.contains('library-image-answer') && viewport) {
+        const nextSize = `${viewport.clientWidth}:${viewport.clientHeight}`
+        if (nextSize !== viewportSize) viewport.scrollTop = 0
+        viewportSize = nextSize
+        // Cancel the current scroll offset: the initial stage always describes
+        // the unscrolled viewport, even while the user reads additional columns.
+        const top = root.getBoundingClientRect().top - viewport.getBoundingClientRect().top + viewport.scrollTop
+        const reserve = parseFloat(getComputedStyle(viewport).paddingBottom) || 0
+        const remaining = Math.max(0, viewport.clientHeight - top)
+        // Keep essay-like legacy answers readable and naturally scrollable.
+        if (targets[0].querySelectorAll('p').length <= 2 && !targets[0].querySelector('ul, ol, pre, table, blockquote')) {
+          heightLimit = Math.max(1, remaining - reserve)
+        }
+        if (root.querySelector('.library-additional-answers')) {
+          setCssProps(root, { '--library-answer-initial-height': `${remaining + 1}px`, '--library-answer-bottom-reserve': `${reserve}px` })
+        }
       }
-      const primaryScale = primary ? fitWidth(primary) : 1
-      const referenceFont = primary
-        ? parseFloat(getComputedStyle(primary).fontSize)
-        : secondary ? parseFloat(getComputedStyle(secondary).fontSize) / 0.75 : 0
-      if (referenceFont > 0)
-        setCssProps(element, { "--study-secondary-font": `${referenceFont * 0.75}px` })
-      const secondaryScale = secondary ? fitWidth(secondary) : 1
-      const setScale = (scale: number) => {
-        if (primary) setCssProps(primary, { "--answer-fit-scale": String(primaryScale * scale) })
-        if (secondary) setCssProps(secondary, { "--answer-fit-scale": String(secondaryScale * scale) })
-      }
-      // Keep simple names within the first viewport. Structured/legacy answers
-      // stay readable and scrollable instead of shrinking an entire essay.
-      const simpleNames = parts.every((part) =>
-        part.querySelectorAll("p").length <= 2 &&
-        !part.querySelector("img, pre, table, blockquote, ul, ol, .inline-math, .math"),
+      if (!(targets[0].clientWidth > 0)) return
+      root.style.removeProperty(property)
+      const preferred = parseFloat(getComputedStyle(targets[0]).fontSize)
+      if (!(preferred > 0)) return
+      const minimum = kind === 'question' ? Math.min(preferred, 10) : Math.min(preferred, 1)
+      const setFont = (font: number) => setCssProps(root, { [property]: `${font}px` })
+      const fits = () => targets.every((target, index) =>
+        target.scrollWidth <= target.clientWidth + 1 &&
+        ((kind === 'question' || index === 0) ? target.scrollHeight <= heightLimit + 1 : true),
       )
-      if (simpleNames && names.offsetHeight > height * 0.9) {
-        let lower = 0
-        let upper = 1
-        for (let iteration = 0; iteration < 14; iteration++) {
-          const scale = (lower + upper) / 2
-          setScale(scale)
-          if (names.offsetHeight <= height * 0.9) lower = scale
-          else upper = scale
+      setFont(preferred)
+      if (!fits()) {
+        let lower = minimum
+        let upper = preferred
+        setFont(lower)
+        if (fits()) {
+          for (let iteration = 0; iteration < 14; iteration++) {
+            const font = (lower + upper) / 2
+            setFont(font)
+            if (fits()) lower = font
+            else upper = font
+          }
         }
-        setScale(lower)
+        setFont(lower)
       }
-      const fittedPrimaryFont = primary
-        ? parseFloat(getComputedStyle(primary).fontSize)
-        : referenceFont
-      if (fittedPrimaryFont > 0)
-        setCssProps(element, { "--study-primary-font": `${fittedPrimaryFont}px` })
-      setCssProps(element, { "--study-info-gap": `${Math.max(16 * fontScale, fittedPrimaryFont * 0.65)}px` })
-      updateScrollHint()
+      setOverflow(!fits())
     }
-    const schedule = () => {
-      if (!disposed && !frame) frame = window.requestAnimationFrame(fit)
-    }
-    const resize = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule)
-    resize?.observe(element)
-    if (!resize) window.addEventListener("resize", schedule)
+    const schedule = () => { if (!disposed && !frame) frame = window.requestAnimationFrame(fit) }
+    const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedule)
+    resize?.observe(card)
+    if (viewport && viewport !== card) resize?.observe(viewport)
+    if (!resize) window.addEventListener('resize', schedule)
     const mutations = new MutationObserver(schedule)
-    mutations.observe(element, { childList: true, subtree: true, characterData: true })
-    const fonts = element.ownerDocument.fonts
+    mutations.observe(root, { childList: true, subtree: true, characterData: true })
+    const fonts = root.ownerDocument.fonts
     void fonts?.ready.then(schedule)
-    fonts?.addEventListener("loadingdone", schedule)
-    element.addEventListener("scroll", updateScrollHint, { passive: true })
+    fonts?.addEventListener('loadingdone', schedule)
     schedule()
     return () => {
       disposed = true
       if (frame) window.cancelAnimationFrame(frame)
       resize?.disconnect()
       mutations.disconnect()
-      window.removeEventListener("resize", schedule)
-      fonts?.removeEventListener("loadingdone", schedule)
-      element.removeEventListener("scroll", updateScrollHint)
-      delete element.dataset.moreBelow
-      element.parentElement?.classList.remove("has-more-answer-content")
-      for (const part of names.querySelectorAll<HTMLElement>(".card-answer-part"))
-        part.style.removeProperty("--answer-fit-scale")
-      element.style.removeProperty("--study-secondary-font")
-      element.style.removeProperty("--study-primary-font")
-      element.style.removeProperty("--study-info-gap")
+      window.removeEventListener('resize', schedule)
+      fonts?.removeEventListener('loadingdone', schedule)
+      root.style.removeProperty(property)
+      root.style.removeProperty('--card-question-height')
+      root.style.removeProperty('--library-answer-initial-height')
+      root.style.removeProperty('--library-answer-bottom-reserve')
     }
-  }, [content, enabled, fontScale])
-  return ref
-}
-
-// Measure the rendered Markdown, including its bold/italic font metrics. Observe
-// the fixed card viewport, not the fitted text height, to avoid resize feedback.
-export default function useFitAnswerText(
-  content: string,
-  enabled: boolean,
-  fontScale: number,
-) {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const element = ref.current
-    if (!element) return
-    const reset = () => {
-      element.style.removeProperty("--answer-fit-scale")
-      element.style.removeProperty("--answer-part-spacing")
-      delete element.dataset.fitMode
-    }
-    reset()
-    if (!enabled) return
-    const viewport = element.closest(".card-content-viewport")
-    let frame = 0
-    let disposed = false
-
-    const fitText = () => {
-      element.style.removeProperty("--answer-fit-scale")
-      delete element.dataset.fitMode
-      const markdown = element.querySelector<HTMLElement>(".markdown-content")
-      if (
-        !markdown ||
-        markdown.querySelector(
-          "img, br, pre, table, blockquote, .inline-math, .math",
-        )
-      )
-        return
-      const blocks = markdown.querySelectorAll<HTMLElement>(
-        "p, h1, h2, h3, h4, h5, h6, li",
-      )
-      const measurableBlocks = Array.from(blocks).filter((block) =>
-        block.textContent?.trim(),
-      )
-      if (!measurableBlocks.length && markdown.textContent?.trim())
-        measurableBlocks.push(markdown)
-      if (!measurableBlocks.length) return
-
-      const style = getComputedStyle(element)
-      const availableWidth =
-        element.clientWidth -
-        parseFloat(style.paddingLeft) -
-        parseFloat(style.paddingRight)
-      const preferredFont = parseFloat(style.fontSize)
-      if (!(availableWidth > 0 && preferredFont > 0)) return
-
-      const measure = () => {
-        const measuringClasses = measurableBlocks.map((block) =>
-          block.classList.contains("card-answer-measure"),
-        )
-        try {
-          return Math.max(
-            ...measurableBlocks.map((block) => {
-              block.classList.add("card-answer-measure")
-              const range = document.createRange()
-              range.selectNodeContents(block)
-              const bounds = block.getBoundingClientRect()
-              // Range also includes italic overhang; normalize its transformed
-              // bounds to layout pixels so the flip animation cannot skew fitting.
-              const textWidth =
-                bounds.width > 0
-                  ? (range.getBoundingClientRect().width * block.offsetWidth) /
-                    bounds.width
-                  : 0
-              return Math.max(block.scrollWidth, textWidth)
-            }),
-          )
-        } finally {
-          measurableBlocks.forEach((block, index) => {
-            block.classList.toggle("card-answer-measure", measuringClasses[index])
-          })
-        }
-      }
-      const naturalWidth = measure()
-      if (!naturalWidth) return
-      const minimumFont =
-        (parseFloat(style.getPropertyValue("--card-answer-fit-min")) || 12) *
-        fontScale
-      const minimumScale = Math.min(1, minimumFont / preferredFont)
-      let scale = Math.min(
-        1,
-        Math.max(minimumScale, (availableWidth - 2) / naturalWidth),
-      )
-      setCssProps(element, { "--answer-fit-scale": String(scale) })
-      // Recheck the actual fitted glyphs to account for pixel rounding and
-      // native Markdown elements whose metrics do not scale perfectly linearly.
-      let fittedWidth = measure()
-      if (fittedWidth > availableWidth && scale > minimumScale) {
-        scale = Math.max(
-          minimumScale,
-          (scale * (availableWidth - 2)) / fittedWidth,
-        )
-        setCssProps(element, { "--answer-fit-scale": String(scale) })
-        fittedWidth = measure()
-      }
-      // Preserve the existing no-wrap treatment for a single plain text block.
-      // Structured Markdown shares the same fitted font but keeps its own wraps.
-      const singlePlainBlock =
-        measurableBlocks.length === 1 &&
-        measurableBlocks[0].tagName !== "LI" &&
-        measurableBlocks[0].textContent?.trim() === markdown.textContent?.trim()
-      if (fittedWidth <= availableWidth && singlePlainBlock)
-        element.dataset.fitMode = "single-line"
-      // If even the readable minimum cannot fit, normal wrapping stays enabled.
-    }
-    const fit = () => {
-      frame = 0
-      fitText()
-      // An unusually long first name can become smaller than the next column.
-      // Keep both adjacent gaps relative to the smaller *fitted* font size.
-      for (const current of [element, element.nextElementSibling]) {
-        const previous = current?.previousElementSibling
-        if (
-          !(current instanceof HTMLElement) ||
-          !(previous instanceof HTMLElement)
-        )
-          continue
-        const currentStyle = getComputedStyle(current)
-        const smallerFont = Math.min(
-          parseFloat(currentStyle.fontSize),
-          parseFloat(getComputedStyle(previous).fontSize),
-        )
-        const gap = parseFloat(
-          currentStyle.getPropertyValue("--card-answer-part-gap"),
-        )
-        if (Number.isFinite(smallerFont * gap))
-          setCssProps(current, { "--answer-part-spacing": `${smallerFont * gap}px` })
-      }
-    }
-    const schedule = () => {
-      if (!disposed && !frame) frame = window.requestAnimationFrame(fit)
-    }
-    const resize =
-      typeof ResizeObserver === "undefined"
-        ? null
-        : new ResizeObserver(schedule)
-    if (viewport) resize?.observe(viewport)
-    if (!resize) window.addEventListener("resize", schedule)
-    // Obsidian renders Markdown asynchronously after the React commit.
-    const mutations = new MutationObserver(schedule)
-    mutations.observe(element, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-    })
-    const fonts = element.ownerDocument.fonts
-    void fonts?.ready.then(schedule)
-    fonts?.addEventListener("loadingdone", schedule)
-    schedule()
-
-    return () => {
-      disposed = true
-      reset()
-      if (frame) window.cancelAnimationFrame(frame)
-      resize?.disconnect()
-      mutations.disconnect()
-      window.removeEventListener("resize", schedule)
-      fonts?.removeEventListener("loadingdone", schedule)
-    }
-  }, [content, enabled, fontScale])
-
-  return ref
+  }, [content, enabled, fontScale, kind])
+  return { ref, overflow }
 }

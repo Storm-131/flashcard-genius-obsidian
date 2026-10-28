@@ -12,6 +12,9 @@ import DifficultyStars from "./DifficultyStars"
 import StarsToggleButton from "./StarsToggleButton"
 import MarkdownContent from "./MarkdownContent"
 import CardAnswer from "./CardAnswer"
+import CardQuestion from "./CardQuestion"
+import useFitAnswerText from "./useFitAnswerText"
+import useCardNavigation from "./useCardNavigation"
 import CardFontSizeControl, { useCardFontSize } from "./CardFontSizeControl"
 import { hasMarkdownImages } from "../images/markdownImages"
 import type { Card, Deck, DeckTopic, SortOrder } from "../types"
@@ -24,7 +27,7 @@ interface Props {
   cardOrder?: string[]
   selectedCardId: string | null
   onSelectCard: (id: string) => void
-  onOpenCardSource?: (id: string) => void
+  onEditSource?: () => void
   markdownContext?: MarkdownRenderContext
   cardSourcePaths?: Record<string, string>
   onAddCard: () => void
@@ -38,7 +41,6 @@ interface Props {
     topicId: string | null,
     beforeCardId?: string,
   ) => void
-  onOpenEditor: () => void
   readOnly: boolean
   immutable?: boolean
   allowDifficultyChanges?: boolean
@@ -151,8 +153,8 @@ function CardItem({
   card,
   index,
   isSelected,
+  isActive,
   onClick,
-  onOpenCardSource,
   markdownContext,
   sourcePath,
   cardHeight,
@@ -161,7 +163,6 @@ function CardItem({
   onDifficultyChange,
   onSave,
   onDelete,
-  onEdit,
   isDragging,
   dropPreview,
   onDragStart,
@@ -172,22 +173,20 @@ function CardItem({
   immutable,
   allowDifficultyChanges,
   showStars,
-  showEditControls,
 }: {
   card: Card
   index: number
   isSelected: boolean
+  isActive: boolean
   onClick: () => void
   cardHeight: number
   squareCards: boolean
   fontScale?: number
-  onOpenCardSource?: (id: string) => void
   markdownContext?: MarkdownRenderContext
   sourcePath?: string
   onDifficultyChange: (difficulty: number) => void
   onSave: (updated: Card) => void
   onDelete: () => void
-  onEdit: () => void
   isDragging: boolean
   dropPreview: "before" | "after" | null
   onDragStart: (event: DragEvent<HTMLDivElement>) => void
@@ -198,7 +197,6 @@ function CardItem({
   immutable: boolean
   allowDifficultyChanges: boolean
   showStars: boolean
-  showEditControls: boolean
 }) {
   const [question, setQuestion] = useState(card.question)
   const [answer, setAnswer] = useState(card.answer)
@@ -250,6 +248,7 @@ function CardItem({
   }
   const cardHasImage = hasMarkdownImages(card.answer)
   const questionHasImage = hasMarkdownImages(card.question)
+  const { ref: typographyRef, overflow: questionOverflow } = useFitAnswerText(card.question, !questionHasImage && !isSelected, fontScale, "question")
 
   const questionContent = isSelected ? (
     <textarea
@@ -269,6 +268,8 @@ function CardItem({
       }}
       aria-label="Edit card front"
     />
+  ) : !questionHasImage ? (
+    <CardQuestion content={card.question} overflow={questionOverflow} markdownContext={markdownContext} sourcePath={sourcePath} />
   ) : (
     <MarkdownContent
       content={card.question}
@@ -302,10 +303,24 @@ function CardItem({
 
   return (
     <div
+      ref={typographyRef}
       id={`workspace-card-${card.id}`}
-      className={`workspace-card${isSelected ? " is-selected" : ""}`}
+      className={`workspace-card${isSelected ? " is-selected" : ""}${isActive ? " is-card-selected" : ""}`}
+      data-card-id={card.id}
+      aria-current={isActive ? "true" : undefined}
+      tabIndex={0}
       data-card-kind={questionHasImage ? "image" : "text"}
-      onClick={onClick}
+      onClick={event => {
+        if ((event.target as Element).closest('a, button, input, textarea, .image-overlay')) return
+        event.currentTarget.focus({ preventScroll: true })
+        onClick()
+      }}
+      onKeyDown={event => {
+        if (event.target === event.currentTarget && event.key === 'Enter') {
+          event.preventDefault()
+          onClick()
+        }
+      }}
       draggable={!isSelected && !immutable}
       onDragStart={isSelected || immutable ? undefined : onDragStart}
       onDragEnd={onDragEnd}
@@ -421,7 +436,7 @@ function CardItem({
               markdownContext={markdownContext}
               sourcePath={sourcePath}
               style={{
-                fontSize: `calc(${12 * fontScale}px * var(--card-text-base-scale, 1.125))`,
+                fontSize: "var(--card-text-font-size)",
                 color: "#6B6560",
                 lineHeight: "1.45",
               }}
@@ -432,6 +447,7 @@ function CardItem({
             card={card}
             content={card.answer}
             imageQuestion={questionHasImage}
+            libraryImageAnswer={questionHasImage}
             fontScale={fontScale}
             markdownContext={markdownContext}
             sourcePath={sourcePath ?? ""}
@@ -561,86 +577,7 @@ function CardItem({
           </svg>
         </button>
       )}
-      {!readOnly && !isSelected && (
-        <button
-          type="button"
-          className="card-action-control"
-          onClick={(event) => {
-            event.stopPropagation()
-            onEdit()
-          }}
-          title="Edit card"
-          aria-label="Edit card"
-          style={{
-            position: "absolute",
-            left: "12px",
-            bottom: "11px",
-            width: "25px",
-            height: "25px",
-            borderRadius: "5px",
-            border: "1px solid #E2DED4",
-            background: "#FFFFFF",
-            color: "#6B6560",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 0,
-          }}
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path
-              d="M8.2 1.5l2.3 2.3-6.4 6.4H1.5V7.6l6.7-6.1Z"
-              stroke="currentColor"
-              strokeWidth="1.25"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-      )}
-      {readOnly && onOpenCardSource && showEditControls && (
-        <button
-          type="button"
-          className="card-action-control source-card-control"
-          onClick={(event) => {
-            event.stopPropagation()
-            onOpenCardSource(card.id)
-          }}
-          title="Open Markdown source"
-          aria-label="Open Markdown source"
-          style={{
-            position: "absolute",
-            left: "12px",
-            bottom: "11px",
-            width: "25px",
-            height: "25px",
-            borderRadius: "5px",
-            border: "1px solid #E2DED4",
-            background: "#FFFFFF",
-            color: "#6B6560",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 0,
-          }}
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M8.2 1.5l2.3 2.3-6.4 6.4H1.5V7.6l6.7-6.1Z"
-              stroke="currentColor"
-              strokeWidth="1.25"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-      )}
+
     </div>
   )
 }
@@ -652,7 +589,7 @@ export default function Workspace({
   cardOrder,
   selectedCardId,
   onSelectCard,
-  onOpenCardSource,
+  onEditSource,
   markdownContext,
   cardSourcePaths,
   onAddCard,
@@ -662,7 +599,6 @@ export default function Workspace({
   onSaveCard,
   onDeleteCard,
   onMoveCard,
-  onOpenEditor,
   readOnly,
   immutable = false,
   allowDifficultyChanges = false,
@@ -689,7 +625,6 @@ export default function Workspace({
   const [visibleToolbarActionCount, setVisibleToolbarActionCount] = useState(4)
   const [showToolbarCardCount, setShowToolbarCardCount] = useState(true)
   const [overflowMenuOpen, setOverflowMenuOpen] = useState(false)
-  const [showEditControls, setShowEditControls] = useState(false)
   const [appliedOrderIds, setAppliedOrderIds] = useState<string[] | null>(null)
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null)
   const [dropPreview, setDropPreview] = useState<{
@@ -708,13 +643,6 @@ export default function Workspace({
     () => cards.some((card) => hasMarkdownImages(card.answer)),
     [cards],
   )
-  const handleEditToolbarClick = () => {
-    if (hasImageCards) {
-      onImageDeckActionBlocked?.("edit")
-      return
-    }
-    setShowEditControls((visible) => !visible)
-  }
   const handleStarsToolbarClick = () => {
     if (hasImageCards) {
       onImageDeckActionBlocked?.("stars")
@@ -967,18 +895,13 @@ export default function Workspace({
     ].filter((group) => group.cards.length > 0)
   }, [cardsInDisplayOrder, deck, topics])
 
-  useEffect(() => {
-    if (!selectedCardId) return
-    const frame = window.requestAnimationFrame(() => {
-      document
-        .getElementById(`workspace-card-${selectedCardId}`)
-        ?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        })
-    })
-    return () => window.cancelAnimationFrame(frame)
-  }, [selectedCardId, cardsInDisplayOrder])
+  useCardNavigation({
+    containerRef: workspaceRef,
+    groups: cardGroups.map(group => group.cards),
+    columns: effectiveCardsPerRow,
+    selectedCardId,
+    onSelectCard,
+  })
 
   const resetCardDrag = () => {
     setDraggedCardId(null)
@@ -1296,26 +1219,17 @@ export default function Workspace({
             {visibleToolbarActionCount > 1 && (
               <button
                 type="button"
-                onClick={handleEditToolbarClick}
-                aria-pressed={showEditControls}
-                title={
-                  showEditControls
-                    ? "Hide source buttons"
-                    : "Show source buttons"
-                }
+                onClick={onEditSource}
+                disabled={!onEditSource}
+                title={onEditSource ? "Open Markdown source beside Flashcard Genius" : "Select a card with an unambiguous Markdown source"}
                 style={{
                   height: "30px",
                   padding: "0 10px",
                   borderRadius: "6px",
-                  border: showEditControls
-                    ? "1px solid var(--app-accent, #4F46E5)"
-                    : "1px solid #E2DED4",
-                  background: showEditControls
-                    ? "var(--app-accent-soft, #FAFAF8)"
-                    : "#FAFAF8",
-                  color: showEditControls
-                    ? "var(--app-accent-strong, #6B6560)"
-                    : "#6B6560",
+                  border: "1px solid #E2DED4",
+                  background: "#FAFAF8",
+                  color: "#6B6560",
+                  opacity: onEditSource ? 1 : 0.5,
                   cursor: "pointer",
                   fontFamily: "inherit",
                   fontSize: "calc(12px * var(--app-ui-font-scale, 1.125))",
@@ -1691,18 +1605,16 @@ export default function Workspace({
                 {visibleToolbarActionCount < 2 && (
                   <button
                     type="button"
-                    onClick={handleEditToolbarClick}
-                    aria-pressed={showEditControls}
+                    onClick={onEditSource}
+                    disabled={!onEditSource}
+                    title={onEditSource ? "Open Markdown source beside Flashcard Genius" : "Select a card with an unambiguous Markdown source"}
                     style={{
                       height: "30px",
                       borderRadius: "6px",
                       border: "1px solid #E2DED4",
-                      background: showEditControls
-                        ? "var(--app-accent-soft, #FAFAF8)"
-                        : "#FAFAF8",
-                      color: showEditControls
-                        ? "var(--app-accent-strong, #6B6560)"
-                        : "#6B6560",
+                      background: "#FAFAF8",
+                      color: "#6B6560",
+                      opacity: onEditSource ? 1 : 0.5,
                       cursor: "pointer",
                       fontFamily: "inherit",
                       fontSize: "calc(12px * var(--app-ui-font-scale, 1.125))",
@@ -1980,8 +1892,8 @@ export default function Workspace({
                       card={card}
                       index={cardsInDisplayOrder.indexOf(card)}
                       isSelected={!readOnly && selectedCardId === card.id}
+                      isActive={selectedCardId === card.id}
                       onClick={() => onSelectCard(card.id)}
-                      onOpenCardSource={onOpenCardSource}
                       markdownContext={markdownContext}
                       sourcePath={cardSourcePaths?.[card.id] ?? ""}
                       cardHeight={scaledCardHeight}
@@ -1992,10 +1904,6 @@ export default function Workspace({
                       }
                       onSave={onSaveCard}
                       onDelete={() => onDeleteCard(card.id)}
-                      onEdit={() => {
-                        onSelectCard(card.id)
-                        onOpenEditor()
-                      }}
                       isDragging={draggedCardId === card.id}
                       dropPreview={previewPosition}
                       onDragStart={(event) => {
@@ -2007,7 +1915,6 @@ export default function Workspace({
                       immutable={immutable}
                       allowDifficultyChanges={allowDifficultyChanges}
                       showStars={showStars}
-                      showEditControls={showEditControls}
                       onDragOver={(event) => {
                         event.preventDefault()
                         if (!draggedCardId || draggedCardId === card.id) return

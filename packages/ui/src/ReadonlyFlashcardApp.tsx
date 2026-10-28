@@ -6,11 +6,12 @@ import StudyMode from './components/StudyMode'
 import TopBar from './components/TopBar'
 import Workspace from './components/Workspace'
 import type { MarkdownRenderContext } from './markdownRenderer'
+import { resolveMarkdownSource } from './sourceSelection'
 
 interface Props extends MaterializedDecks {
   initialDeckId?: string | null
   onPersistDifficulty?: (card: Card, difficulty: number) => Promise<void>
-  onOpenCardSource?: (card: Card) => void
+  onOpenMarkdownSource?: (filePath: string) => void
   cardSourceKeys?: Record<string, string>
   cardSourcePaths?: Record<string, string>
   markdownContext?: MarkdownRenderContext
@@ -29,7 +30,7 @@ export default function ReadonlyFlashcardApp({
   cardOrderByDeck,
   initialDeckId,
   onPersistDifficulty,
-  onOpenCardSource,
+  onOpenMarkdownSource,
   cardSourceKeys,
   cardSourcePaths,
   markdownContext,
@@ -92,7 +93,7 @@ export default function ReadonlyFlashcardApp({
       : undefined
     const currentCardStillExists = selectedCardId ? cards.some(card => card.id === selectedCardId) : false
     const fallbackCard = cards.find(card => card.deckId === fallbackDeckId) ?? cards[0]
-    const nextSelectedCard = nextCard ?? (currentCardStillExists ? cards.find(card => card.id === selectedCardId) : fallbackCard)
+    const nextSelectedCard = nextCard ?? (currentCardStillExists ? cards.find(card => card.id === selectedCardId) : selectedCardId ? fallbackCard : undefined)
     const nextDeck = nextSelectedCard
       ? decks.find(deck => deck.id === nextSelectedCard.deckId)
       : sourceDeck
@@ -126,6 +127,7 @@ export default function ReadonlyFlashcardApp({
   }, [cardList, studyCardIds, visibleCards])
 
   const selectedDeck = decks.find(deck => deck.id === selectedDeckId) ?? null
+  const editSourcePath = resolveMarkdownSource(cardList, selectedCardId, selectedDeck, cardSourcePaths)
   const cardCounts = useMemo(
     () => Object.fromEntries(decks.map(deck => [deck.id, cardList.filter(card => card.deckId === deck.id).length])),
     [cardList, decks],
@@ -143,14 +145,34 @@ export default function ReadonlyFlashcardApp({
   const handleSelectCard = (cardId: string) => {
     const card = cardList.find(item => item.id === cardId)
     if (!card) return
-    setSelectedDeckId(card.deckId)
-    selectedDeckSourceKeyRef.current = decks.find(deck => deck.id === card.deckId)?.sourceFileName ?? null
     selectedCardSourceKeyRef.current = cardSourceKeys?.[card.id] ?? null
     setSelectedCardId(cardId)
-    setSelectedStudyTopicId(undefined)
-    setStudyCardIds(null)
-    setMode('edit')
   }
+
+  const handleFinderSelectCard = (cardId: string) => {
+    const card = cardList.find(item => item.id === cardId)
+    if (!card) return
+    const activeCards = mode === 'study' ? studyCards : visibleCards
+    if (!activeCards.some(item => item.id === cardId)) {
+      setSelectedDeckId(card.deckId)
+      selectedDeckSourceKeyRef.current = decks.find(deck => deck.id === card.deckId)?.sourceFileName ?? null
+      setSelectedStudyTopicId(undefined)
+      setStudyCardIds(null)
+      setSearchQuery('')
+    }
+    handleSelectCard(cardId)
+    if (mode === 'stats') setMode('edit')
+  }
+
+  useEffect(() => {
+    if (mode === 'stats' || !selectedCardId) return
+    const activeCards = mode === 'study' ? studyCards : visibleCards
+    if (!activeCards.some(card => card.id === selectedCardId)) {
+      const nextCard = activeCards[0]
+      setSelectedCardId(nextCard?.id ?? null)
+      selectedCardSourceKeyRef.current = nextCard ? cardSourceKeys?.[nextCard.id] ?? null : null
+    }
+  }, [mode, studyCards, visibleCards, selectedCardId, cardSourceKeys])
 
   const handleModeChange = (nextMode: AppMode) => {
     setMode(nextMode)
@@ -208,7 +230,8 @@ export default function ReadonlyFlashcardApp({
           selectedStudyTopicId={selectedStudyTopicId}
           onSelectDeck={handleSelectDeck}
           onSelectTopic={(deckId, topicId) => { setSelectedDeckId(deckId); setSelectedStudyTopicId(topicId); setStudyCardIds(null) }}
-          onSelectCard={handleSelectCard}
+          selectedCardId={selectedCardId}
+          onSelectCard={handleFinderSelectCard}
           onCreateTopic={noop}
           onRenameTopic={noop}
           onMoveTopic={noop}
@@ -235,11 +258,14 @@ export default function ReadonlyFlashcardApp({
         ) : mode === 'study' ? (
           <StudyMode
             cards={studyCards}
+            selectedCardId={selectedCardId}
+            onSelectCard={handleSelectCard}
             deck={selectedDeck}
             decks={decks}
             topics={topics}
             cardOrderByDeck={cardOrderByDeck}
             onExit={() => { setStudyCardIds(null); setMode('edit') }}
+            onEditSource={editSourcePath && onOpenMarkdownSource ? () => onOpenMarkdownSource(editSourcePath) : undefined}
             onDifficultyChange={(cardId, difficulty) => { void handleDifficultyChange(cardId, difficulty) }}
             markdownContext={markdownContext}
             cardSourcePaths={cardSourcePaths}
@@ -258,10 +284,7 @@ export default function ReadonlyFlashcardApp({
             cardOrder={selectedDeckId ? cardOrderByDeck[selectedDeckId] : undefined}
             selectedCardId={selectedCardId}
             onSelectCard={handleSelectCard}
-            onOpenCardSource={cardId => {
-              const card = cardList.find(item => item.id === cardId)
-              if (card) onOpenCardSource?.(card)
-            }}
+            onEditSource={editSourcePath && onOpenMarkdownSource ? () => onOpenMarkdownSource(editSourcePath) : undefined}
             markdownContext={markdownContext}
             cardSourcePaths={cardSourcePaths}
             onAddCard={noop}
@@ -271,7 +294,6 @@ export default function ReadonlyFlashcardApp({
             onSaveCard={noop}
             onDeleteCard={noop}
             onMoveCard={noop}
-            onOpenEditor={noop}
             readOnly
             immutable
             allowDifficultyChanges

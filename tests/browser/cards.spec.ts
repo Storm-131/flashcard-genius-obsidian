@@ -145,7 +145,7 @@ for (const mode of ["library", "study"] as const) {
           ? `#workspace-card-${fixture.id} img`
           : `.flip-card[data-card-id="${fixture.id}"] img`,
       )
-      await expect(images).toHaveCount(mode === "library" ? 1 : 2)
+      await expect(images).toHaveCount(1)
       await expect
         .poll(() =>
           images.evaluateAll((nodes) =>
@@ -244,37 +244,7 @@ for (const mode of ["library", "study"] as const) {
         expect(bounds[2].height).toBeGreaterThan(previous[2].height)
       }
       previous = bounds
-      if (mode === "study") {
-        for (const fixture of fixtures)
-          await page.locator(`.flip-card[data-card-id="${fixture.id}"]`).click()
-        for (const fixture of fixtures)
-          await expect
-            .poll(() =>
-              page
-                .locator(
-                  `.flip-card[data-card-id="${fixture.id}"] .flip-card-inner`,
-                )
-                .evaluate((node) => getComputedStyle(node).transform),
-            )
-            .toMatch(/^matrix3d\(-1,/)
-        // The front reserves space for its label and footer; each face must
-        // fill its own available area identically for both source resolutions.
-        await measure(true)
-      }
-      if (mode === "study") {
-        for (const fixture of fixtures)
-          await page.locator(`.flip-card[data-card-id="${fixture.id}"]`).click()
-        for (const fixture of fixtures)
-          await expect
-            .poll(() =>
-              page
-                .locator(
-                  `.flip-card[data-card-id="${fixture.id}"] .flip-card-inner`,
-                )
-                .evaluate((node) => getComputedStyle(node).transform),
-            )
-            .toBe("none")
-      }
+
     }
   })
 }
@@ -308,6 +278,7 @@ test("keeps long text scrollable while its portrait image fits", async ({
   page,
 }) => {
   const card = page.locator("#workspace-card-long-text")
+  await card.click({ position: { x: 5, y: 5 } })
   await assertContained(card.getByRole("img", { name: "Portrait with text" }))
   const viewport = card.locator(".card-content-viewport")
   expect(
@@ -331,144 +302,18 @@ test("keeps long text scrollable while its portrait image fits", async ({
   ).toBe(true)
 })
 
-test("uses the same image limits on both study faces and keeps fullscreen previews independent", async ({
-  page,
-}) => {
+test("keeps study front images unchanged and does not repeat them on the back", async ({ page }) => {
   await page.getByRole("button", { name: "Study", exact: true }).click()
-  const image = page
-    .locator(".flip-card-face:not(.flip-card-back)")
-    .getByRole("img", { name: "Portrait", exact: true })
-  await assertContained(image)
-  const portrait = image
-    .locator('xpath=ancestor::div[contains(@class,"flip-card")]')
-    .first()
-  await portrait.click()
-  await expect
-    .poll(() =>
-      portrait
-        .locator(".flip-card-inner")
-        .evaluate((element) => getComputedStyle(element).transform),
-    )
-    .toMatch(/^matrix3d\(-1,/)
-  const backImage = portrait
-    .locator(".flip-card-back")
-    .getByRole("img", { name: "Portrait", exact: true })
-  await assertContained(backImage)
-  await expect(
-    backImage.locator(
-      'xpath=ancestor::div[contains(@class,"image-question-preview")]',
-    ),
-  ).toHaveCSS("opacity", "1")
-  await expect(backImage).toHaveCSS("opacity", "0.35")
-  await expect(backImage).toHaveCSS("transform", "matrix(-1, 0, 0, 1, 0, 0)")
-  await expect(image).toHaveCSS("transform", "none")
-  await expect(image).toHaveCSS("opacity", "1")
-  await expect(
-    portrait.locator(".flip-card-back .study-answer-divider"),
-  ).toHaveCount(0)
-  const answerBlock = portrait.locator(".flip-card-back .image-question-answer")
-  const answer = answerBlock.locator(".image-question-answer-part").first()
-  await expect(answerBlock).toContainText("Portrait answer")
-  await openCardSize(page, "study")
-  const heightControl = page.getByRole("slider", { name: /^Height/ })
-  await heightControl.focus()
-  await heightControl.press("Home")
-  for (let step = 0; step < 4; step++) await heightControl.press("ArrowRight")
-  const preferredFont = () =>
-    answer.evaluate((element) => {
-      const fitScale =
-        parseFloat(
-          element.parentElement!.style.getPropertyValue("--answer-fit-scale"),
-        ) || 1
-      return parseFloat(getComputedStyle(element).fontSize) / fitScale
-    })
-  const initialAnswerFontSize = await preferredFont()
-  expect(initialAnswerFontSize).toBeGreaterThan(14)
-  await heightControl.press("End")
-  // The preferred size grows with height; the fitted result may already be
-  // limited by the unchanged card width.
-  await expect.poll(preferredFont).toBeGreaterThan(initialAnswerFontSize)
-  await heightControl.press("Home")
-  await expect.poll(preferredFont).toBeLessThan(initialAnswerFontSize)
-  for (let step = 0; step < 4; step++) await heightControl.press("ArrowRight")
-  await expect.poll(preferredFont).toBeCloseTo(initialAnswerFontSize, 0)
-  await expect(answer).toHaveCSS("text-align", "center")
-  await expect(answer).toHaveCSS("text-align-last", "center")
-  expect(
-    await answerBlock.evaluate((element) => {
-      const bounds = element.getBoundingClientRect()
-      const parent = element.parentElement!.getBoundingClientRect()
-      return Math.abs(
-        (bounds.left + bounds.right) / 2 - (parent.left + parent.right) / 2,
-      )
-    }),
-  ).toBeLessThan(2)
-  await expect.poll(() => answerBlock.evaluate((element) => {
-      const bounds = element.querySelector(".study-answer-name-content")!.getBoundingClientRect()
-      const viewport = element.parentElement!
-      const parent = viewport.getBoundingClientRect()
-      const style = getComputedStyle(viewport)
-      const contentTop = parent.top + parseFloat(style.paddingTop)
-      const contentHeight =
-        viewport.clientHeight -
-        parseFloat(style.paddingTop) -
-        parseFloat(style.paddingBottom)
-      return Math.abs(
-        (bounds.top + bounds.bottom) / 2 - (contentTop + contentHeight / 2),
-      )
-    })).toBeLessThan(2)
-  const initialPreferredFontSize = await answer.evaluate((element) => {
-    const fitScale =
-      parseFloat(
-        element.parentElement!.style.getPropertyValue("--answer-fit-scale"),
-      ) || 1
-    return parseFloat(getComputedStyle(element).fontSize) / fitScale
-  })
-  const fontControl = page.getByRole("slider", { name: "Card font size" })
-  await fontControl.focus()
-  await fontControl.press("End")
-  await fontControl.press("ArrowLeft")
-  await fontControl.press("ArrowLeft")
-  const largerCardFontSize = Number.parseFloat(
-    await answer.evaluate((element) => getComputedStyle(element).fontSize),
-  )
-  // The slider scales the preferred size; long labels may hit the width limit.
-  await expect
-    .poll(() =>
-      answer.evaluate((element) => {
-        const fitScale =
-          parseFloat(
-            element.parentElement!.style.getPropertyValue("--answer-fit-scale"),
-          ) || 1
-        return parseFloat(getComputedStyle(element).fontSize) / fitScale
-      }),
-    )
-    .toBeCloseTo(initialPreferredFontSize * 1.5, 0)
-  expect(largerCardFontSize).toBeLessThanOrEqual(
-    initialPreferredFontSize * 1.5 + 1,
-  )
-  await fontControl.press("Home")
-  for (let step = 0; step < 6; step++) await fontControl.press("ArrowRight")
-  await openCardSize(page, "study")
-  await expect(
-    portrait
-      .locator(".flip-card-back")
-      .getByText("Portrait answer", { exact: true }),
-  ).toHaveCSS("opacity", "1")
-  await portrait
-    .getByRole("button", { name: "Enlarge image: Portrait" })
-    .last()
-    .click()
-  const overlay = page
-    .getByRole("dialog", { name: "Enlarged view: Portrait" })
-    .getByRole("img")
-  await expect(overlay).toBeVisible()
-  expect(
-    await overlay.evaluate((element) => getComputedStyle(element).maxHeight),
-  ).toBe("828px")
-  await expect(overlay).toHaveCSS("transform", "none")
-  await expect(overlay).toHaveCSS("opacity", "1")
-  await expect(overlay).toHaveCSS("cursor", "pointer")
+  const card = page.locator('.flip-card[data-card-id="portrait"]')
+  const front = card.locator('.flip-card-face:not(.flip-card-back)')
+  await assertContained(front.getByRole('img', { name: 'Portrait', exact: true }))
+  await card.click()
+  await expect(card.locator('.flip-card-inner')).toHaveClass(/is-flipped/)
+  await expect(card.locator('.flip-card-back img')).toHaveCount(0)
+  await expect(card.locator('.flip-card-back')).toContainText('Portrait answer')
+  await card.press('Space')
+  await front.getByRole('button', { name: 'Enlarge image: Portrait' }).click()
+  await expect(page.getByRole('dialog', { name: 'Enlarged view: Portrait' }).getByRole('img')).toBeVisible()
 })
 
 test("scales UI once and preserves the independent card font control", async ({
@@ -504,9 +349,7 @@ test("scales UI once and preserves the independent card font control", async ({
   await slider.press("End")
   await slider.press("ArrowLeft")
   await slider.press("ArrowLeft")
-  expect(
-    await body.evaluate((element) => getComputedStyle(element).fontSize),
-  ).toBe("21.9375px")
+  await expect.poll(() => body.evaluate(element => getComputedStyle(element).fontSize)).toBe("21.9375px")
 })
 
 test("uses answer names rather than image links in the explorer", async ({
@@ -554,59 +397,16 @@ test("keeps controls usable in a small window and allows all modes", async ({
   ).toBe(true)
 })
 
-test("keeps overlaid answers scrollable without moving or blocking the question image", async ({
-  page,
-}) => {
-  await page.getByRole("button", { name: "Study", exact: true }).click()
-  const image = page
-    .locator(".flip-card-face:not(.flip-card-back)")
-    .getByRole("img", { name: "Portrait with long answer", exact: true })
-  const card = image
-    .locator('xpath=ancestor::div[contains(@class,"flip-card")]')
-    .first()
+test("keeps long image-card answers scrollable as ordinary text", async ({ page }) => {
+  await page.getByRole('button', { name: 'Study', exact: true }).click()
+  const card = page.locator('.flip-card[data-card-id="long-image-question"]')
   await card.click()
-  await expect
-    .poll(() =>
-      card
-        .locator(".flip-card-inner")
-        .evaluate((element) => getComputedStyle(element).transform),
-    )
-    .toMatch(/^matrix3d\(-1,/)
-  const back = card.locator(".flip-card-back")
-  const backImage = back.getByRole("img", {
-    name: "Portrait with long answer",
-    exact: true,
-  })
-  const first = await assertContained(backImage)
-  const answer = back.locator(".image-question-answer")
-  expect(
-    await answer.evaluate(
-      (element) => element.scrollHeight > element.clientHeight,
-    ),
-  ).toBe(true)
-  await answer.evaluate((element) => {
-    element.scrollTop = element.scrollHeight
-  })
-  const last = answer.getByText("Answer paragraph 30:", { exact: false })
+  const back = card.locator('.flip-card-back')
+  await expect(back.locator('img')).toHaveCount(0)
+  const viewport = back.locator('.card-content-viewport')
+  expect(await viewport.evaluate(node => node.scrollHeight > node.clientHeight)).toBe(true)
+  await viewport.evaluate(node => { node.scrollTop = node.scrollHeight })
+  const last = back.getByText('Answer paragraph 30:', { exact: false })
   await expect(last).toBeVisible()
-  expect(
-    await last.evaluate((element) => {
-      const bounds = element.getBoundingClientRect()
-      const parent = element
-        .closest(".image-question-answer")!
-        .getBoundingClientRect()
-      return bounds.bottom <= parent.bottom + 1
-    }),
-  ).toBe(true)
-  const after = await assertContained(backImage)
-  expect(after.bottom).toBe(first.bottom)
-  expect(after.height).toBe(first.height)
-  await back
-    .getByRole("button", { name: "Enlarge image: Portrait with long answer" })
-    .click()
-  await expect(
-    page.getByRole("dialog", {
-      name: "Enlarged view: Portrait with long answer",
-    }),
-  ).toBeVisible()
+  expect(await last.evaluate(node => node.getBoundingClientRect().bottom <= node.closest('.card-content-viewport')!.getBoundingClientRect().bottom + 1)).toBe(true)
 })

@@ -10,6 +10,9 @@ import DifficultyStars from "./DifficultyStars"
 import StarsToggleButton from "./StarsToggleButton"
 import MarkdownContent from "./MarkdownContent"
 import CardAnswer from "./CardAnswer"
+import CardQuestion from "./CardQuestion"
+import useFitAnswerText from "./useFitAnswerText"
+import useCardNavigation from "./useCardNavigation"
 import CardFontSizeControl, { useCardFontSize } from "./CardFontSizeControl"
 import {
   extractMarkdownImages,
@@ -24,7 +27,10 @@ interface Props {
   decks: Deck[]
   topics: DeckTopic[]
   cardOrderByDeck: Record<string, string[]>
+  selectedCardId?: string | null
+  onSelectCard?: (id: string) => void
   onExit: () => void
+  onEditSource?: () => void
   onDifficultyChange: (id: string, difficulty: number) => void
   immutable?: boolean
   allowDifficultyChanges?: boolean
@@ -55,6 +61,7 @@ function isImageControlTarget(target: EventTarget | null): boolean {
 export function StudyCard({
   card,
   isFlipped,
+  isSelected = false,
   onClick,
   onDifficultyChange,
   cardHeight,
@@ -68,6 +75,7 @@ export function StudyCard({
 }: {
   card: Card
   isFlipped: boolean
+  isSelected?: boolean
   onClick: () => void
   onDifficultyChange: (difficulty: number) => void
   cardHeight: number
@@ -87,14 +95,14 @@ export function StudyCard({
     : card.question
   const usesImageAsQuestion = Boolean(card.imageAsQuestion && images.length > 0)
   const isImageQuestion = questionHasImage || usesImageAsQuestion
-  const questionPreview = usesImageAsQuestion
-    ? images[0].raw
-    : questionImages.map((image) => image.raw).join("\n\n")
   const answerContent = usesImageAsQuestion ? questionHeading : card.answer
+  const { ref: typographyRef, overflow: questionOverflow } = useFitAnswerText(card.question, !isImageQuestion, fontScale, "question")
 
   return (
     <div
-      className="flip-card"
+      ref={typographyRef}
+      className={`flip-card${isSelected ? " is-card-selected" : ""}`}
+      aria-current={isSelected ? "true" : undefined}
       data-card-kind={isImageQuestion ? "image" : "text"}
       data-card-id={card.id}
       onPointerDown={(event) => {
@@ -105,11 +113,13 @@ export function StudyCard({
           event.stopPropagation()
           return
         }
+        if ((event.target as Element).closest('a, button, input, textarea')) return
+        event.currentTarget.focus({ preventScroll: true })
         onClick()
       }}
       onKeyDown={(event) => {
         if (event.target !== event.currentTarget) return
-        if (event.key === "Enter" || event.key === " ") {
+        if (event.key === "Enter") {
           event.preventDefault()
           onClick()
         }
@@ -118,8 +128,8 @@ export function StudyCard({
       tabIndex={0}
       aria-label={
         isFlipped
-          ? "Answer visible; flip card back"
-          : "Question visible; reveal answer"
+          ? "Answer visible; select and flip card back"
+          : "Question visible; select and reveal answer"
       }
       style={
         {
@@ -129,7 +139,7 @@ export function StudyCard({
           "--card-font-scale": fontScale,
         } as CSSProperties
       }
-      title={isFlipped ? "Click to flip back" : "Click to reveal answer"}
+      title="Click to select and flip; Space also flips the selected card"
     >
       <div className={`flip-card-inner${isFlipped ? " is-flipped" : ""}`}>
         {/* Front — Question */}
@@ -166,14 +176,15 @@ export function StudyCard({
               flex: 1,
               minHeight: 0,
               overflowY: "auto",
-              paddingBottom: "28px",
+              paddingBottom: isImageQuestion ? 0 : "28px",
               paddingRight: "3px",
               display: "flex",
               flexDirection: "column",
+              justifyContent: isImageQuestion ? "center" : undefined,
             }}
           >
             <div
-              className={isImageQuestion ? "study-image-question" : undefined}
+              className={isImageQuestion ? "study-image-question" : "study-text-question"}
               style={{
                 marginBottom: "4px",
                 flex: usesImageAsQuestion ? 1 : undefined,
@@ -182,7 +193,7 @@ export function StudyCard({
                 flexDirection: usesImageAsQuestion ? "column" : undefined,
               }}
             >
-              <MarkdownContent
+              {!isImageQuestion ? <CardQuestion content={card.question} overflow={questionOverflow} markdownContext={markdownContext} sourcePath={sourcePath} /> : <MarkdownContent
                 content={usesImageAsQuestion ? images[0].raw : card.question}
                 allowImages
                 markdownContext={markdownContext}
@@ -205,7 +216,7 @@ export function StudyCard({
                   color: "#111110",
                   lineHeight: "1.5",
                 }}
-              />
+              />}
             </div>
           </div>
           <div
@@ -234,7 +245,7 @@ export function StudyCard({
                 strokeWidth="1.2"
               />
             </svg>
-            Tap to reveal
+            Click or Space to reveal
           </div>
           {showStars && images.length === 0 && (
             <DifficultyStars
@@ -263,32 +274,16 @@ export function StudyCard({
             boxShadow: "0 2px 10px rgba(79,70,229,0.25)",
           }}
         >
-          {questionHeading && !usesImageAsQuestion && (
+          {questionHeading && !isImageQuestion && (
             <div className="card-heading">
-              <MarkdownContent
-                content={questionHeading}
-                allowImages
-                markdownContext={markdownContext}
-                sourcePath={sourcePath}
-                className="study-text-content"
-                style={{
-                  marginBottom: "10px",
-                  fontSize: `calc(${14 * fontScale}px * var(--card-text-base-scale, 1.125))`,
-                  fontWeight: 650,
-                  color: "#FFFFFF",
-                  lineHeight: "1.45",
-                  textAlign: "left",
-                }}
-              />
+              <CardQuestion content={questionHeading} overflow={questionOverflow} markdownContext={markdownContext} sourcePath={sourcePath} />
             </div>
           )}
           {questionHeading && !questionHasImage && !usesImageAsQuestion && (
             <div className="study-answer-divider" aria-hidden="true" />
           )}
           <div
-            className={`card-content-viewport${
-              isImageQuestion ? " image-question-back study-image-question-back" : ""
-            }`}
+            className="card-content-viewport"
             style={{
               flex: 1,
               minHeight: 0,
@@ -299,34 +294,11 @@ export function StudyCard({
               flexDirection: "column",
             }}
           >
-            {questionPreview && (
-              <MarkdownContent
-                content={questionPreview}
-                allowImages
-                markdownContext={markdownContext}
-                sourcePath={sourcePath}
-                className="image-question-preview image-question-content"
-                style={{
-                  flex: 1,
-                  minHeight: 0,
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginTop: usesImageAsQuestion ? "8px" : 0,
-                  marginBottom: usesImageAsQuestion ? 0 : "10px",
-                  fontSize: `calc(${13 * fontScale}px * var(--card-text-base-scale, 1.125))`,
-                  lineHeight: "1.5",
-                }}
-              />
-            )}
             {isImageQuestion || images.length === 0 ? (
               <CardAnswer
                 card={card}
                 content={answerContent}
                 imageQuestion={isImageQuestion}
-                studyImageAnswer={isImageQuestion}
-                answerVisible={isFlipped}
                 fontScale={fontScale}
                 markdownContext={markdownContext}
                 sourcePath={sourcePath}
@@ -371,7 +343,9 @@ export default function StudyMode({
   decks,
   topics,
   cardOrderByDeck,
-  onExit,
+  selectedCardId,
+  onSelectCard,
+  onEditSource,
   onDifficultyChange,
   immutable = false,
   allowDifficultyChanges = false,
@@ -540,6 +514,7 @@ export default function StudyMode({
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
   const cardIdSignature = cards.map((card) => card.id).join("|")
+  const editOrderSignature = editOrderedIds.join("|")
 
   useEffect(() => {
     const nextIds = new Set(editOrderedIds)
@@ -548,7 +523,7 @@ export default function StudyMode({
       (previous) => new Set([...previous].filter((id) => nextIds.has(id))),
     )
     setOrderStatus("edit-order")
-  }, [cardIdSignature, editOrderedIds])
+  }, [cardIdSignature, editOrderSignature])
 
   const cardMap = useMemo(
     () => Object.fromEntries(cards.map((c) => [c.id, c])),
@@ -669,6 +644,20 @@ export default function StudyMode({
         ? cardsPerRow
         : Math.min(cardsPerRow, responsiveMaxCards)
 
+  useCardNavigation({
+    containerRef: studyModeRef,
+    groups: orderStatus === "edit-order" ? editOrderGroups.map(group => group.cards) : [orderedCards],
+    columns: effectiveCardsPerRow,
+    selectedCardId,
+    onSelectCard,
+    onFlip: handleFlip,
+    onRate: (card, value) => {
+      if (card.hasDifficultyColumn !== false && !extractMarkdownImages(card.answer).length && (!immutable || allowDifficultyChanges)) {
+        onDifficultyChange(card.id, value)
+      }
+    },
+  })
+
   const progressIndicator = (
     <div
       style={{
@@ -769,6 +758,36 @@ export default function StudyMode({
             flexShrink: 0,
           }}
         >
+          {toolbarOverflowLevel < 2 && (
+            <button
+              className="study-reset-button"
+              onClick={handleReset}
+              onMouseEnter={(event) => event.currentTarget.classList.add("is-hovered")}
+              onMouseLeave={(event) => event.currentTarget.classList.remove("is-hovered")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "5px",
+                padding: "5px 12px",
+                height: "32px",
+                borderRadius: "6px",
+                border: "1px solid #E2DED4",
+                color: "#6B6560",
+                fontSize: "calc(12px * var(--app-ui-font-scale, 1.125))",
+                fontWeight: 500,
+                cursor: "pointer",
+                transition: "all 0.15s",
+                fontFamily: "inherit",
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M2 6.5A4.5 4.5 0 1 1 6.5 11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                <path d="M2 4v3h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Reset
+            </button>
+          )}
+
           {toolbarOverflowLevel < 5 && (
             <div ref={sortControlsRef} style={{ position: "relative" }}>
               <button
@@ -842,6 +861,29 @@ export default function StudyMode({
                 </div>
               )}
             </div>
+          )}
+
+          {toolbarOverflowLevel < 5 && (
+            <button
+              type="button"
+              onClick={onEditSource}
+              disabled={!onEditSource}
+              title={onEditSource ? "Open Markdown source beside Flashcard Genius" : "Select a card with an unambiguous Markdown source"}
+              style={{
+                height: "30px",
+                padding: "0 10px",
+                borderRadius: "6px",
+                border: "1px solid #E2DED4",
+                background: "#FAFAF8",
+                color: "#6B6560",
+                opacity: onEditSource ? 1 : 0.5,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                fontSize: "calc(12px * var(--app-ui-font-scale, 1.125))",
+              }}
+            >
+              Edit
+            </button>
           )}
 
           {toolbarOverflowLevel < 4 && (
@@ -1020,98 +1062,6 @@ export default function StudyMode({
             </div>
           )}
 
-          {toolbarOverflowLevel < 2 && (
-            <button
-              className="study-reset-button"
-              onClick={handleReset}
-              onMouseEnter={(event) =>
-                event.currentTarget.classList.add("is-hovered")
-              }
-              onMouseLeave={(event) =>
-                event.currentTarget.classList.remove("is-hovered")
-              }
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "5px",
-                padding: "5px 12px",
-                height: "32px",
-                borderRadius: "6px",
-                border: "1px solid #E2DED4",
-                color: "#6B6560",
-                fontSize: "calc(12px * var(--app-ui-font-scale, 1.125))",
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "all 0.15s",
-                fontFamily: "inherit",
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <path
-                  d="M2 6.5A4.5 4.5 0 1 1 6.5 11"
-                  stroke="currentColor"
-                  strokeWidth="1.3"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M2 4v3h3"
-                  stroke="currentColor"
-                  strokeWidth="1.3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Reset
-            </button>
-          )}
-
-          {toolbarOverflowLevel < 1 && (
-            <>
-              <div
-                style={{
-                  width: "1px",
-                  height: "20px",
-                  background: "#E2DED4",
-                  margin: "0 2px",
-                }}
-              />
-
-              <button
-                className="study-exit-button"
-                onClick={onExit}
-                onMouseEnter={(event) =>
-                  event.currentTarget.classList.add("is-hovered")
-                }
-                onMouseLeave={(event) =>
-                  event.currentTarget.classList.remove("is-hovered")
-                }
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  padding: "5px 12px",
-                  height: "32px",
-                  borderRadius: "6px",
-                  fontSize: "calc(12px * var(--app-ui-font-scale, 1.125))",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                  fontFamily: "inherit",
-                }}
-              >
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  <path
-                    d="M9 2H11V11H9M6 4L9 6.5L6 9M1 6.5H9"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                Exit Study
-              </button>
-            </>
-          )}
         </div>
         {toolbarStacked && (
           <div
@@ -1358,6 +1308,27 @@ export default function StudyMode({
                   />
                 )}
                 {toolbarOverflowLevel >= 5 && (
+                  <button
+                    type="button"
+                    onClick={onEditSource}
+                    disabled={!onEditSource}
+                    title={onEditSource ? "Open Markdown source beside Flashcard Genius" : "Select a card with an unambiguous Markdown source"}
+                    style={{
+                      height: "30px",
+                      borderRadius: "6px",
+                      border: "1px solid #E2DED4",
+                      background: "#FAFAF8",
+                      color: "#6B6560",
+                      opacity: onEditSource ? 1 : 0.5,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      fontSize: "calc(12px * var(--app-ui-font-scale, 1.125))",
+                    }}
+                  >
+                    Edit
+                  </button>
+                )}
+                {toolbarOverflowLevel >= 5 && (
                   <div style={{ display: "grid", gap: "8px" }}>
                     <button
                       type="button"
@@ -1442,24 +1413,6 @@ export default function StudyMode({
                     Reset
                   </button>
                 )}
-                {toolbarOverflowLevel >= 1 && (
-                  <button
-                    type="button"
-                    onClick={onExit}
-                    style={{
-                      height: "30px",
-                      borderRadius: "6px",
-                      border: "1px solid #E2DED4",
-                      background: "#FAFAF8",
-                      color: "#6B6560",
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                      fontSize: "calc(12px * var(--app-ui-font-scale, 1.125))",
-                    }}
-                  >
-                    Exit Study
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -1507,8 +1460,7 @@ export default function StudyMode({
               color: "var(--app-accent-strong, #4338CA)",
             }}
           >
-            Click any card to flip it and reveal the answer. Progress is tracked
-            above.
+            Click a card to select it and reveal its answer. Space flips the selected card; arrow keys navigate.
           </span>
         </div>
       )}
@@ -1596,7 +1548,11 @@ export default function StudyMode({
                 isFlipped={flippedIds.has(card.id)}
                 markdownContext={markdownContext}
                 sourcePath={cardSourcePaths?.[card.id] ?? ""}
-                onClick={() => handleFlip(card.id)}
+                isSelected={selectedCardId === card.id}
+                onClick={() => {
+                  onSelectCard?.(card.id)
+                  handleFlip(card.id)
+                }}
                 onDifficultyChange={(difficulty) =>
                   onDifficultyChange(card.id, difficulty)
                 }

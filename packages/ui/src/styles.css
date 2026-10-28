@@ -3,15 +3,11 @@
   --card-text-base-scale: 1.125;
   --card-image-max-height: 75cqh;
 
-  /* Only image answers follow card dimensions. Clamp their shared base before
-     multiplying columns, so the 2 : 1.5 : 1 hierarchy remains intact. */
-  --card-image-answer-base: clamp(10px, calc(5px + 3cqi + 2cqh), 28px);
-  --card-text-answer-base: 13px;
-  --card-answer-primary-scale: 2;
-  --card-answer-secondary-scale: 1.5;
-  --card-answer-other-scale: 1;
-  --card-answer-part-gap: 0.4;
-  --card-answer-fit-min: 12; /* Pixels, multiplied by the card font control. */
+  --card-answer-ratio: 0.75;
+  --card-image-answer-base: 20px;
+  --answer-divider-primary: 3px;
+  --answer-divider-secondary: 2px;
+  --answer-divider-gap: clamp(0.5rem, 0.65em, 0.8rem);
 
   background-color: #F7F6F2;
   color: #111110;
@@ -21,8 +17,6 @@
 }
 
 .flashcard-genius-root .card-answer-group {
-  --answer-base: var(--card-text-answer-base);
-
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -35,7 +29,12 @@
 /* Resolve the manual scale on the card that owns it, rather than on the root
    where inherited custom-property references would use the default value. */
 .flashcard-genius-root :is(.workspace-card, .flip-card) {
-  --card-text-font-size: calc(var(--card-text-answer-base) * var(--card-font-scale, 1) * var(--card-text-base-scale));
+  --question-preferred-font: calc(var(--card-question-base, 13px) * var(--card-font-scale, 1) * var(--card-text-base-scale));
+  --card-text-font-size: calc(var(--card-question-font-size, var(--question-preferred-font)) * var(--card-answer-ratio));
+}
+
+.flashcard-genius-root .flip-card {
+  --card-question-base: 13.5px;
 }
 
 .flashcard-genius-root .card-answer-part {
@@ -45,62 +44,8 @@
   overflow-wrap: anywhere;
 }
 
-.flashcard-genius-root .card-answer-part + .card-answer-part {
-  margin-block-start: var(--answer-part-spacing, calc(var(--card-answer-part-gap) * 1em));
-}
-
-.flashcard-genius-root .image-question-answer {
-  --answer-base: var(--card-image-answer-base);
-
-  width: 92%;
-  line-height: 1.2;
-}
-
-.flashcard-genius-root .image-question-answer .card-answer-part {
-  font-size: calc(var(--answer-base) * var(--answer-column-scale) * var(--card-font-scale, 1) * var(--card-text-base-scale) * var(--answer-fit-scale, 1));
-}
-
-.flashcard-genius-root .image-question-answer .image-answer-additional-column {
-  text-align: left;
-  text-align-last: left;
-}
-
-.flashcard-genius-root .workspace-card {
-  --card-text-answer-base: 12px;
-
-  /* Match the compact five-column library, then scale with the smaller axis. */
-  --card-image-answer-base: clamp(6px, 2cqmin, 16px);
-}
-
 .flashcard-genius-root .workspace-card .card-answer-group {
   color: #6B6560;
-}
-
-.flashcard-genius-root .workspace-card .image-question-answer {
-  width: 100%;
-  max-height: none;
-  overflow: visible;
-  text-align: left;
-  text-align-last: auto;
-  text-shadow: none;
-}
-
-/* Contain host-theme paragraph spacing inside each image answer part. Column
-   spacing comes from the group; real paragraphs inside a cell remain intact. */
-.flashcard-genius-root .image-question-answer :is(p, h1, h2, h3, h4, h5, h6) {
-  margin-block: 0 !important;
-}
-
-.flashcard-genius-root .image-question-answer :is(p, h1, h2, h3, h4, h5, h6) + :is(p, h1, h2, h3, h4, h5, h6) {
-  margin-block-start: calc(var(--card-answer-part-gap) * 1em) !important;
-}
-
-.flashcard-genius-root .image-question-answer .markdown-paragraph-gap {
-  height: calc(var(--card-answer-part-gap) * 1em) !important;
-}
-
-.flashcard-genius-root .card-answer-part[data-fit-mode="single-line"] :is(.markdown-content, p, h1, h2, h3, h4, h5, h6) {
-  white-space: nowrap;
 }
 
 /* Button weight applies to controls, while card text keeps its own font scale. */
@@ -212,93 +157,6 @@
   height: 100% !important;
 }
 
-/* Study-only image backs: one scroll owner, with notes outside the centered
-   names. No workspace/Library or ordinary text-card rules are overridden. */
-.flashcard-genius-root .flip-card-back .study-image-question-back {
-  position: relative;
-  overflow: hidden !important;
-}
-
-.flashcard-genius-root .flip-card-back .study-image-question-back.has-more-answer-content::after {
-  content: "⌄";
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #FFF;
-  font-size: 18px;
-  line-height: 1;
-  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
-  pointer-events: none;
-}
-
-.flashcard-genius-root .flip-card-back .study-image-answer {
-  height: 100%;
-  min-height: 0;
-  max-height: 100%;
-  display: block;
-  overflow: hidden auto;
-  scrollbar-width: thin;
-  scrollbar-gutter: stable both-edges;
-  overscroll-behavior: contain;
-  text-align: center;
-  text-align-last: center;
-
-  --study-primary-font: calc(var(--answer-base) * 2 * var(--card-font-scale, 1) * var(--card-text-base-scale));
-}
-
-.flashcard-genius-root .study-image-answer .study-answer-names {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.flashcard-genius-root .study-image-answer .study-answer-name-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.flashcard-genius-root .study-image-answer .study-answer-names :is(.card-answer-part, .markdown-content, p, strong, em) {
-  overflow-wrap: normal;
-  word-break: normal;
-  hyphens: none;
-}
-
-.flashcard-genius-root .study-image-answer .study-answer-names [data-column-index="1"] {
-  font-size: calc(var(--study-secondary-font, calc(var(--answer-base) * 1.5 * var(--card-font-scale, 1) * var(--card-text-base-scale))) * var(--answer-fit-scale, 1));
-}
-
-.flashcard-genius-root .study-image-answer .study-name-line + .study-name-line {
-  margin-block-start: 0.08em;
-}
-
-.flashcard-genius-root .study-image-answer .study-answer-info {
-  margin-block-start: var(--study-info-gap, 1.5em);
-  padding-block-end: 0.75em;
-}
-
-.flashcard-genius-root .study-image-answer .image-answer-additional-column {
-  font-size: min(calc(var(--study-primary-font) * 0.4), calc(18px * var(--card-font-scale, 1)));
-  line-height: 1.45;
-}
-
-.flashcard-genius-root .study-image-answer .study-answer-info .card-answer-part + .card-answer-part {
-  margin-block-start: 0.8em;
-}
-
-.flashcard-genius-root .study-image-answer:focus-visible {
-  outline: 1px solid currentcolor;
-  outline-offset: -1px;
-}
-
-/* Temporary measurement must also override native Markdown inline sizes. */
-.flashcard-genius-root .card-answer-measure {
-  width: max-content !important;
-  max-width: none !important;
-  white-space: nowrap !important;
-}
-
 .flashcard-genius-root .card-editor-input {
   height: var(--card-editor-height, auto);
 }
@@ -308,7 +166,6 @@
   font-family: var(--font-text);
 }
 
-/* Flip card styles */
 .flip-card {
   perspective: 1200px;
 }
@@ -318,7 +175,7 @@
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  transition: transform 0.52s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .flip-card-inner.is-flipped {
@@ -365,44 +222,6 @@
 }
 
 .markdown-image-zoom:hover { background: rgb(17 17 16 / 86%); }
-
-.image-question-preview img {
-  transform: scaleX(-1);
-  opacity: 0.35;
-}
-
-.image-question-back {
-  display: grid !important;
-  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
-  place-items: center;
-}
-
-.image-question-back > .image-question-preview,
-.image-question-back > .image-question-answer {
-  grid-area: 1 / 1;
-}
-
-.image-question-back > .image-question-preview {
-  margin-block: 0 !important;
-}
-
-.image-question-answer {
-  position: relative;
-  z-index: 1;
-  width: 92%;
-  max-height: 100%;
-  overflow-y: auto;
-  margin-inline: auto;
-  text-align: justify;
-  text-align-last: center;
-  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
-}
-
-/* Keep the image control clickable when a long answer overlaps the image. */
-.image-question-back .markdown-image-zoom { z-index: 2; }
-
-.theme-dark .flip-card-back .image-question-name,
-.theme-dark .flip-card-back .image-question-name * { color: #FFF !important; }
 
 .study-answer-divider {
   flex: 0 0 2px;
@@ -1249,4 +1068,166 @@ body.flashcard-genius-resizing-sidebar {
   border-color: #FCA5A5;
   background: #FEF2F2;
   color: #DC2626;
+}
+
+/* Selection never changes card dimensions or the image's reserved front area. */
+.flashcard-genius-root :is(.workspace-card, .flip-card).is-card-selected {
+  outline: 2px solid var(--app-accent, #4F46E5);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--app-accent-soft, #EEF2FF);
+}
+
+.flashcard-genius-root .sidebar-card-preview.is-card-selected {
+  background: var(--app-accent-soft, #EEF2FF) !important;
+  color: var(--app-accent-strong, #4338CA) !important;
+  box-shadow: inset 3px 0 var(--app-accent, #4F46E5);
+  border-radius: 4px;
+}
+
+.flashcard-genius-root.theme-dark .sidebar-card-preview.is-card-selected {
+  color: var(--app-accent, #A5B4FC) !important;
+}
+
+.flashcard-genius-root .answer-column-divider {
+  flex: 0 0 auto;
+  height: var(--answer-divider-primary);
+  margin-block: var(--answer-divider-gap);
+  background: var(--app-divider, var(--app-accent, #4F46E5));
+  opacity: 0.9;
+}
+
+.flashcard-genius-root .answer-column-divider.is-secondary {
+  height: var(--answer-divider-secondary);
+  opacity: 0.55;
+}
+
+/* Keep column boundaries compact without changing paragraphs into columns. */
+.flashcard-genius-root .card-answer-group .card-answer-part {
+  margin-block: 0;
+}
+
+.flashcard-genius-root .card-answer-group .markdown-content :is(p, h1, h2, h3, h4, h5, h6, ul, ol, pre, blockquote) {
+  margin-block: 0 !important;
+}
+
+.flashcard-genius-root .card-answer-group .markdown-content > :is(p, ul, ol, pre, blockquote) + :is(p, ul, ol, pre, blockquote) {
+  margin-block-start: 0.35em !important;
+}
+
+/* Inactive cards pass wheel and touch scrolling to the surrounding grid. Clip
+   also prevents hidden, inactive faces from retaining a scroll offset. */
+.flashcard-genius-root :is(.workspace-card, .flip-card):not(.is-card-selected) :is(.card-content-viewport, .card-heading) {
+  overflow: clip !important;
+}
+
+/* Native embeds can carry natural-size caps on several nested wrappers. */
+.flashcard-genius-root :is(.library-image-question, .image-question-content) :is(p, .markdown-image, .internal-embed.image-embed) {
+  max-width: none !important;
+  max-height: none !important;
+  min-width: 0;
+}
+
+.flashcard-genius-root .card-content-viewport .markdown-image > img {
+  min-width: 0;
+  flex-shrink: 0;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flashcard-genius-root .flip-card-inner {
+    transition-duration: 0s;
+  }
+}
+
+/* Image answer sizes share one fitted primary reference in both modes. */
+.flashcard-genius-root .image-card-answer {
+  --image-preferred-font: calc(var(--card-image-answer-base) * var(--card-font-scale, 1) * var(--card-text-base-scale));
+}
+
+.flashcard-genius-root .image-card-answer .card-answer-part {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+.flashcard-genius-root .library-primary-answer {
+  min-height: var(--library-answer-initial-height, 0px);
+  padding-bottom: var(--library-answer-bottom-reserve, 0px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.flashcard-genius-root .library-additional-answers {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* Questions are fitted in both dimensions, never scrolled inside the card. */
+.flashcard-genius-root .card-heading:has(.question-fit-slot),
+.flashcard-genius-root .flip-card-face:not(.flip-card-back) .card-content-viewport:has(.study-text-question) {
+  overflow: clip !important;
+}
+
+.flashcard-genius-root .question-fit-slot {
+  position: relative;
+  max-height: var(--card-question-height, 25cqh);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.flashcard-genius-root .card-question-text {
+  font-size: var(--card-question-font-size, var(--question-preferred-font));
+  font-weight: 500;
+  line-height: 1.45;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+.flashcard-genius-root .card-question-text .markdown-content :is(p, h1, h2, h3, h4, h5, h6, ul, ol, pre, blockquote) {
+  margin-block: 0 !important;
+}
+
+.flashcard-genius-root .card-question-text .markdown-content > * + * {
+  margin-block-start: 0.35em !important;
+}
+
+.flashcard-genius-root .question-overflow-button {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: 3px 5px;
+  border: 1px solid var(--app-accent, #4F46E5);
+  border-radius: 4px;
+  background: var(--app-panel, #FFFFFF);
+  color: var(--app-accent-strong, #4338CA);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.flashcard-genius-root .question-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 50%);
+}
+
+.flashcard-genius-root .question-dialog {
+  width: min(640px, 100%);
+  max-height: 80vh;
+  overflow: auto;
+  padding: 20px;
+  border-radius: 10px;
+  background: var(--background-primary, var(--app-panel, #FFFFFF));
+  color: var(--text-normal, #111110);
+  font-size: 16px;
 }

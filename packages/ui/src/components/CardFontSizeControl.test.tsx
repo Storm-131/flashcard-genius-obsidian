@@ -29,7 +29,6 @@ function renderWorkspace() {
       onSaveCard={vi.fn()}
       onDeleteCard={vi.fn()}
       onMoveCard={vi.fn()}
-      onOpenEditor={vi.fn()}
       showStars={false}
       onToggleShowStars={vi.fn()}
     />,
@@ -58,11 +57,6 @@ describe("card font size controls", () => {
     openFontControls("Open library controls")
     fireEvent.change(screen.getByRole("slider", { name: "Card font size" }), {
       target: { value: "150" },
-    })
-    expect(
-      screen.getByText("Card question").closest(".markdown-content"),
-    ).toHaveStyle({
-      fontSize: "calc(19.5px * var(--card-text-base-scale, 1.125))",
     })
     expect(
       (screen

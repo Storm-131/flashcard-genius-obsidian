@@ -70,51 +70,30 @@ describe("StudyCard image question", () => {
     )
     expect(
       await screen.findAllByRole("img", { name: "Sperber.webp" }),
-    ).toHaveLength(2)
+    ).toHaveLength(1)
     expect(screen.getByText("Sperber")).toBeInTheDocument()
     expect(screen.getByText("Accipiter nisus")).toBeInTheDocument()
     expect(container.querySelector(".markdown-paragraph-gap")).toBeNull()
-    const preview = container.querySelector(
-      ".flip-card-back .image-question-preview",
-    )
-    expect(preview).toBeInTheDocument()
-    expect(preview?.querySelector("img")).toHaveAttribute("alt", "Sperber.webp")
-    expect(
-      container.querySelector(
-        ".flip-card-face:not(.flip-card-back) .image-question-preview",
-      ),
-    ).toBeNull()
-    expect(
-      container.querySelector(".flip-card-back .study-answer-divider"),
-    ).toBeNull()
-    expect(preview?.parentElement).toHaveClass("image-question-back")
-    const answer = preview?.nextElementSibling
-    expect(answer).toHaveTextContent("Sperber")
-    expect(answer).toHaveClass("image-question-answer")
-    const answerParts = answer?.querySelectorAll(".image-question-answer-part")
-    expect(answerParts).toHaveLength(3)
-    expect(
-      Array.from(answer?.querySelectorAll(".card-answer-part") ?? []).map(
-        (part) => part.getAttribute("data-column-index"),
-      ),
-    ).toEqual(["0", "1", "2"])
+    expect(container.querySelector('.flip-card-back img')).toBeNull()
+    expect(container.querySelector('.flip-card-face:not(.flip-card-back) img')).toBeInTheDocument()
+    expect(container.querySelector('.flip-card-back .answer-column-divider')).toBeInTheDocument()
+    expect(Array.from(container.querySelectorAll('.flip-card-back .card-answer-part')).map(part => part.getAttribute('data-column-index'))).toEqual(['0', '1', '2'])
+
   })
 
-  it("shows matching mirrored image faces when image-as-question is active", async () => {
+  it("keeps the image on the front and its title on the back for image-as-question cards", async () => {
     const { container } = renderStudyCard(true)
 
     expect(
       await screen.findAllByRole("img", { name: "Gradienten-Schema" }),
-    ).toHaveLength(2)
+    ).toHaveLength(1)
     expect(screen.getByText("Image question")).toBeInTheDocument()
-    expect(screen.getByText("Tap to reveal")).toBeInTheDocument()
+    expect(screen.getByText("Click or Space to reveal")).toBeInTheDocument()
     expect(screen.getByText("Was zeigt das Schema?")).toBeInTheDocument()
     expect(
       screen.queryByText("Die Gradientenrichtung."),
     ).not.toBeInTheDocument()
-    expect(
-      container.querySelector(".image-question-preview"),
-    ).toBeInTheDocument()
+    expect(container.querySelector(".flip-card-back img")).toBeNull()
   })
 
   it("does not flip the card when the image zoom button is clicked", async () => {
@@ -129,6 +108,19 @@ describe("StudyCard image question", () => {
     expect(
       screen.getByRole("dialog", { name: "Enlarged view: Gradienten-Schema" }),
     ).toBeInTheDocument()
+  })
+
+  it('does not select or flip a card when rating buttons are clicked', () => {
+    const onClick = vi.fn()
+    const onDifficultyChange = vi.fn()
+    render(<StudyCard
+      card={{ id: 'plain', deckId: 'deck', question: 'Question', answer: 'Answer', tags: [], hasDifficultyColumn: true }}
+      isFlipped={false} onClick={onClick} onDifficultyChange={onDifficultyChange}
+      cardHeight={240} squareCards={false} showStars
+    />)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Set difficulty to 5 out of 5' })[0])
+    expect(onDifficultyChange).toHaveBeenCalledWith(5)
+    expect(onClick).not.toHaveBeenCalled()
   })
 
   it("behält bei deaktivierter Option die normale Frage-Antwort-Reihenfolge", async () => {
